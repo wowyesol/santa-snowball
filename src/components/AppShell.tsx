@@ -29,6 +29,7 @@ const SUB_ROUTES = new Set([
   "/open",
   "/result",
   "/guide",
+  "/admin",
 ]);
 
 /**

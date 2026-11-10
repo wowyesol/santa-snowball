@@ -80,41 +80,41 @@ export default function GuidePage() {
         {/* 2. 응모권 규칙 */}
         <section className="mt-5">
           <h2 className="mb-2 text-sm font-extrabold text-white">응모권 규칙</h2>
-          <div className="rounded-2xl bg-white/95 p-4 text-xs text-slate-800 shadow-md">
+          <div className="rounded-2xl bg-white/95 p-4 text-xs text-slate-800 shadow-md break-keep">
             <div className="divide-y divide-slate-100">
-              <div className="flex items-center justify-between py-2">
+              <div className="flex items-center justify-between gap-3 py-2">
                 <span className="font-medium text-slate-600">최초 가입 보너스</span>
-                <span className="font-extrabold text-slate-900">+1장</span>
+                <span className="shrink-0 font-extrabold text-slate-900">+1장</span>
               </div>
-              <div className="flex items-center justify-between py-2">
+              <div className="flex items-center justify-between gap-3 py-2">
                 <span className="font-medium text-slate-600">
                   친구 스노우볼에 편지 넣기
                 </span>
-                <span className="font-extrabold text-slate-900">
+                <span className="shrink-0 font-extrabold text-slate-900">
                   +1장 (최대 10명)
                 </span>
               </div>
-              <div className="flex items-center justify-between py-2">
+              <div className="flex items-center justify-between gap-3 py-2">
                 <span className="font-medium text-slate-600">
                   내 스노우볼에 편지 받기
                 </span>
-                <span className="font-extrabold text-slate-900">
+                <span className="shrink-0 font-extrabold text-slate-900">
                   +1장 (무제한)
                 </span>
               </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="font-bold text-blue-700">
+              <div className="flex items-center justify-between gap-3 py-2">
+                <span className="font-bold text-blue-700 leading-snug">
                   Gemini 대학생 플랜 가입 주문 영수증 캡처 1장 승인
                 </span>
-                <span className="font-extrabold text-blue-700">
+                <span className="shrink-0 font-extrabold text-blue-700 text-right">
                   +100장 · LV+1
                 </span>
               </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="font-bold text-indigo-700">
+              <div className="flex items-center justify-between gap-3 py-2">
+                <span className="font-bold text-indigo-700 leading-snug">
                   내가 초대한 친구의 Gemini 가입 승인
                 </span>
-                <span className="font-extrabold text-indigo-700">
+                <span className="shrink-0 font-extrabold text-indigo-700 text-right">
                   +50장 · LV+1 (무제한)
                 </span>
               </div>
@@ -125,7 +125,7 @@ export default function GuidePage() {
         {/* 3. 당첨 방식 */}
         <section className="mt-5">
           <h2 className="mb-2 text-sm font-extrabold text-white">당첨 방식</h2>
-          <div className="rounded-2xl bg-white/95 p-4 text-xs leading-relaxed text-slate-700 shadow-md">
+          <div className="rounded-2xl bg-white/95 p-4 text-xs leading-relaxed text-slate-700 shadow-md break-keep">
             <ul className="list-disc space-y-1.5 pl-4 font-medium">
               <li>
                 <strong className="font-extrabold text-slate-900">
@@ -148,16 +148,16 @@ export default function GuidePage() {
           <h2 className="mb-2 text-sm font-extrabold text-white">
             사인업 레벨 · 스노우볼 업그레이드
           </h2>
-          <div className="rounded-2xl bg-white/95 p-4 text-xs text-slate-800 shadow-md">
+          <div className="rounded-2xl bg-white/95 p-4 text-xs text-slate-800 shadow-md break-keep">
             <p className="leading-relaxed font-medium text-slate-600">
               내 Gemini 가입 인증(+1)과 내가 추천한 친구의 가입 인증(+1/명)이 쌓일 때마다 사인업 레벨이 올라가고 스노우볼 받침대 디자인이 업그레이드돼요.
             </p>
-            <p className="mt-1.5 font-extrabold text-slate-900">
+            <p className="mt-1.5 font-extrabold text-slate-900 leading-snug">
               LV0 기본(회색) → LV1 파랑(1명) → LV3 빨강(3명) → LV10 황금(10명)
             </p>
 
             {/* 4단계 스노우볼 이미지 미리보기 */}
-            <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+            <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
               {[
                 { lv: "LV 0", name: "기본 회색", img: "/lv0_snowball.png" },
                 { lv: "LV 1", name: "1명 파랑", img: "/lv1_snowball.png" },
@@ -166,18 +166,18 @@ export default function GuidePage() {
               ].map((item) => (
                 <div
                   key={item.lv}
-                  className="flex flex-col items-center rounded-xl border border-slate-200 bg-slate-50 p-2"
+                  className="flex flex-col items-center rounded-xl border border-slate-200 bg-slate-50 px-1 py-2"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.img}
                     alt={item.name}
-                    className="h-12 w-12 object-contain"
+                    className="h-11 w-11 object-contain"
                   />
                   <span className="mt-1 text-[10px] font-extrabold text-slate-900">
                     {item.lv}
                   </span>
-                  <span className="text-[9px] font-semibold text-slate-500">
+                  <span className="text-[9px] font-semibold text-slate-500 break-keep">
                     {item.name}
                   </span>
                 </div>

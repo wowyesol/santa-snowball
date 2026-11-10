@@ -947,38 +947,49 @@ export async function recordTrackingClick(snowballId: string): Promise<string> {
 }
 
 /**
- * 이미지 파일(File)을 브라우저 Canvas로 리사이즈·압축한 뒤:
- * 1) Supabase Storage 버킷('verifications' 또는 'receipts')이 열려 있으면 Public URL로 업로드하여 반환
- * 2) 버킷이 없거나 RLS 제한 시, 운영자가 DB(image_url_1)에서 직접 복사해 브라우저에서 바로 열어볼 수 있는
- *    최적화된 Base64 Data URL(`data:image/jpeg;base64,...`)을 반환합니다.
+ * 이미지 파일(File)을 Supabase Storage의 'verifications' 공개 버킷에 업로드(`verifications/${Date.now()}_${random}.jpg`)하고,
+ * `getPublicUrl`로 반환된 `https://...` 공개 URL을 반환합니다.
+ * 버킷 업로드가 실패하는 경우에만 브라우저 Canvas로 압축한 Base64 Data URL(`data:image/jpeg;base64,...`) 폴백(Fallback)을 반환합니다.
  */
 export async function uploadVerificationImage(
   file: File,
-  snowballId: string
+  _snowballId?: string
 ): Promise<string> {
-  // 1) 먼저 Supabase Storage 업로드 시도
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-  const safePath = `receipts/${snowballId}_${Date.now()}.${ext}`;
+  // 1) 'verifications' 공개 버킷으로 업로드 시도 (경로: verifications/${Date.now()}_${random}.jpg)
+  try {
+    const random = Math.random().toString(36).substring(2, 10);
+    const storagePath = `verifications/${Date.now()}_${random}.jpg`;
 
-  for (const bucketName of ["verifications", "gemini_verifications", "receipts"]) {
     const { data: upData, error: upError } = await supabase.storage
-      .from(bucketName)
-      .upload(safePath, file, {
+      .from("verifications")
+      .upload(storagePath, file, {
         cacheControl: "3600",
         upsert: true,
+        contentType: file.type || "image/jpeg",
       });
 
     if (!upError && upData?.path) {
       const { data: pubUrlData } = supabase.storage
-        .from(bucketName)
+        .from("verifications")
         .getPublicUrl(upData.path);
-      if (pubUrlData?.publicUrl) {
+
+      if (pubUrlData?.publicUrl && pubUrlData.publicUrl.startsWith("http")) {
         return pubUrlData.publicUrl;
       }
+    } else if (upError) {
+      console.warn(
+        "[Supabase Storage] verifications 버킷 업로드 실패, Base64 폴백으로 전환합니다:",
+        upError.message
+      );
     }
+  } catch (storageErr) {
+    console.warn(
+      "[Supabase Storage] 업로드 예외 발생, Base64 폴백으로 전환합니다:",
+      storageErr
+    );
   }
 
-  // 2) Storage 버킷이 설정되지 않은 경우: Canvas 압축 후 실제 이미지 Data URL 반환
+  // 2) 버킷 업로드 실패 시 폴백(Fallback): Canvas 압축 후 Base64 Data URL 반환
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () =>
@@ -1019,6 +1030,72 @@ export async function uploadVerificationImage(
     };
     reader.readAsDataURL(file);
   });
+}
+
+/**
+ * [/admin] 관리자 검수 페이지용 전체 제미나이 인증 신청 내역 조회 (최신순)
+ */
+export async function getAllGeminiVerificationsForAdmin(): Promise<
+  GeminiVerification[]
+> {
+  const { data, error } = await supabase
+    .from("gemini_verifications")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(
+      error.message || "인증 목록을 불러오는 중 오류가 발생했습니다."
+    );
+  }
+  return (data as GeminiVerification[]) ?? [];
+}
+
+/**
+ * [/admin] 관리자 검수 페이지에서 특정 인증 건을 '승인' 또는 '반려'로 즉시 변경
+ * - DB의 `gemini_verifications.status` 컬럼을 `'승인'` 또는 `'반려'`로 업데이트합니다.
+ * - 연결된 `snowballs.gemini_status` 및 `gemini_verified` 상태도 함께 동기화합니다.
+ */
+export async function updateGeminiVerificationStatusForAdmin(
+  verification: GeminiVerification,
+  nextStatus: "승인" | "반려",
+  rejectReason?: string | null
+): Promise<GeminiVerification> {
+  const cleanReason =
+    nextStatus === "반려"
+      ? rejectReason?.trim() ||
+        "주문 영수증 캡처에 계정 이메일 또는 주문 날짜가 확인되지 않아요."
+      : null;
+
+  const { data, error } = await supabase
+    .from("gemini_verifications")
+    .update({
+      status: nextStatus,
+      reject_reason: cleanReason,
+    })
+    .eq("id", verification.id)
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    throw new Error(
+      error?.message || `상태를 '${nextStatus}'(으)로 변경하지 못했습니다.`
+    );
+  }
+
+  // 스노우볼의 gemini_status 표시 상태 동기화 (응모권 지급은 DB Trigger에서 자동 처리)
+  if (verification.snowball_id) {
+    await supabase
+      .from("snowballs")
+      .update({
+        gemini_status: nextStatus,
+        gemini_verified: nextStatus === "승인",
+      })
+      .eq("id", verification.snowball_id);
+  }
+
+  notifyAuthChanged();
+  return data as GeminiVerification;
 }
 
 export async function getGeminiVerification(

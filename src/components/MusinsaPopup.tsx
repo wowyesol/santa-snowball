@@ -52,7 +52,7 @@ export default function MusinsaPopup({
         </div>
 
         {/* 무신사 상품권 일러스트 영역 */}
-        <div className="w-full h-36 rounded-2xl bg-gradient-to-br from-[#0B1528] via-[#13315C] to-[#1E88E5] text-white flex flex-col items-center justify-center mb-5 shadow-inner">
+        <div className="w-full min-h-[140px] h-auto py-5 px-4 rounded-2xl bg-gradient-to-br from-[#0B1528] via-[#13315C] to-[#1E88E5] text-white flex flex-col items-center justify-center mb-5 shadow-inner text-center break-keep">
           <span className="px-2.5 py-0.5 rounded-full bg-amber-300 text-[#0B1528] text-[10px] font-black tracking-tight mb-1.5">
             1등 경품 · 1명
           </span>
@@ -65,14 +65,14 @@ export default function MusinsaPopup({
         </div>
 
         {/* 타이틀 & 서브 문구 */}
-        <div className="text-center mb-5">
+        <div className="text-center mb-5 break-keep">
           <h2
             id="p00-title"
             className="text-lg font-extrabold text-[#102A4E] tracking-tight mb-1"
           >
             무신사 20만 원 응모하기
           </h2>
-          <p className="text-xs text-[#5B7493]">
+          <p className="text-xs text-[#5B7493] leading-relaxed">
             친구 스노우볼에 편지 채우고, 나도 편지 받자
           </p>
         </div>

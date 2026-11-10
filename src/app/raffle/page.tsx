@@ -149,13 +149,13 @@ export default function RafflePage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col px-5 pt-6 pb-12">
+      <div className="flex flex-col px-5 pt-6 pb-12 break-keep">
         {/* 상단 타이틀 */}
         <div className="text-center mb-5">
           <h1 className="text-2xl font-extrabold text-white tracking-tight mb-1.5">
             크리스마스 선물 응모
           </h1>
-          <p className="text-xs text-sky-100/90 leading-relaxed">
+          <p className="text-xs text-sky-100/90 leading-relaxed break-keep">
             모든 응모권을 원하는 경품에 나눠 사용해 보세요.
             <br />
             ⓘ 응모권을 많이 사용할수록 당첨 확률이 높아져요.
@@ -191,7 +191,7 @@ export default function RafflePage() {
             <p className="text-xs font-extrabold text-[#102A4E] mb-1">
               아직 응모권이 없어요
             </p>
-            <p className="text-[11px] text-[#5B7493]">
+            <p className="text-[11px] text-[#5B7493] leading-relaxed break-keep">
               친구 스노우볼에 편지 보내기 +1 · 편지 받기 +1 · Gemini 가입 인증 +100
             </p>
           </div>
@@ -224,9 +224,9 @@ export default function RafflePage() {
               >
                 {/* 상단 상품 아이콘 & 정보 */}
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-16 h-16 rounded-xl border border-[#BFD8F5] bg-[#E8F2FF] flex flex-col items-center justify-center shrink-0">
+                  <div className="min-w-[64px] min-h-[64px] h-auto px-2 py-2 rounded-xl border border-[#BFD8F5] bg-[#E8F2FF] flex flex-col items-center justify-center shrink-0 text-center">
                     <span className="text-2xl leading-none">{prize.emoji}</span>
-                    <span className="text-[9px] font-bold text-[#102A4E] mt-1">
+                    <span className="text-[9px] font-bold text-[#102A4E] mt-1 break-keep">
                       {prize.shortTitle}
                     </span>
                   </div>
@@ -235,7 +235,7 @@ export default function RafflePage() {
                     <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#1E88E5] text-white text-[10px] font-extrabold mb-1">
                       {prize.rankBadge}
                     </span>
-                    <h2 className="text-sm font-extrabold text-[#0D2B52]">
+                    <h2 className="text-sm font-extrabold text-[#0D2B52] leading-snug break-keep">
                       {prize.name}
                     </h2>
                   </div>
@@ -305,23 +305,23 @@ export default function RafflePage() {
           })}
         </div>
 
-        {/* 하단 투썸플레이스 1만 원권(15명) 자동 응모 안내 박스 — 따뜻하고 깔끔한 노란색 단색 UI 배경 + 테두리 없음(border-none) + 진한 네이비/다크 브라운 텍스트 */}
-        <div className="w-full p-4 rounded-2xl bg-[#FDE047] border-none text-[#1E1B18] text-left mb-4 shadow-md">
+        {/* 하단 투썸플레이스 1만 원권(15명) 자동 응모 안내 박스 — 텍스트 잘림 방지(h-auto, break-keep) */}
+        <div className="w-full h-auto p-4 rounded-2xl bg-[#FDE047] border-none text-[#1E1B18] text-left mb-4 shadow-md">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-[#FEF08A] border-none flex items-center justify-center text-xl shrink-0">
               🎁
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 mb-0.5">
+            <div className="min-w-0 flex-1 break-keep">
+              <div className="flex flex-wrap items-center gap-1.5 mb-1">
                 <span className="inline-block px-2 py-0.5 rounded-full bg-[#102A4E] text-[#FEF9C3] text-[9px] font-black tracking-tight">
                   LUCKY BONUS · 전원 자동 응모
                 </span>
               </div>
-              <p className="text-xs font-extrabold text-[#102A4E] truncate">
-                행운의 선물 · 투썸플레이스 1만 원 상품권 (15명)
+              <p className="text-[13px] font-extrabold text-[#102A4E] leading-snug break-keep">
+                투썸플레이스 1만원 상품권 15명
               </p>
-              <p className="text-[11px] text-[#3F2E1E] font-bold mt-0.5">
-                가입자 전원 자동 응모 · 모두에게 동일한 당첨 기회!
+              <p className="text-[11px] text-[#3F2E1E] font-bold leading-snug mt-0.5 break-keep">
+                가입자 전원 자동 응모! 동일한 당첨기회!
               </p>
             </div>
           </div>

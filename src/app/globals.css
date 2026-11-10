@@ -2,12 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 기본 배경 및 폰트 스타일 설정 */
+/* 기본 배경 및 폰트 스타일 설정 (모바일 360px~390px 한글 단어 단위 줄바꿈 기본 적용) */
 body {
   background-color: #f3f4f6;
   color: #111827;
   font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 /* ============================================================================

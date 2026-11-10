@@ -271,7 +271,7 @@ function LoginS02Content() {
 
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col px-5 pt-7 pb-12 text-left"
+        className="flex flex-col px-5 pt-7 pb-12 text-left break-keep"
       >
         {/* 상단 타이틀 */}
         <div className="text-center mb-6">
@@ -297,11 +297,11 @@ function LoginS02Content() {
 
           {authState.isAuthenticated ? (
             <div className="w-full px-3.5 py-2.5 rounded-xl bg-[#E6F1FC] flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <span className="w-6 h-6 rounded-full border border-dashed border-[#3898FF] text-[#1E88E5] text-[11px] font-black flex items-center justify-center shrink-0">
                   G
                 </span>
-                <span className="text-xs font-bold text-[#102A4E] truncate">
+                <span className="text-xs font-bold text-[#102A4E] break-all leading-snug">
                   {authState.email} 로 로그인됨
                 </span>
               </div>
@@ -337,15 +337,15 @@ function LoginS02Content() {
           </h2>
 
           <div className="space-y-2.5 mb-3">
-            <div className="flex items-center justify-between gap-2">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
+            <div className="flex items-start justify-between gap-2">
+              <label className="flex items-start gap-2 cursor-pointer select-none min-w-0 flex-1">
                 <input
                   type="checkbox"
                   checked={agreePrivacy}
                   onChange={(e) => setAgreePrivacy(e.target.checked)}
-                  className="w-4 h-4 rounded accent-[#1E88E5]"
+                  className="w-4 h-4 mt-0.5 rounded accent-[#1E88E5] shrink-0"
                 />
-                <span className="text-xs font-bold text-[#102A4E]">
+                <span className="text-xs font-bold text-[#102A4E] leading-snug break-keep">
                   [필수] 구글 이메일 · 닉네임 수집 · 이용 동의
                 </span>
               </label>
@@ -356,21 +356,21 @@ function LoginS02Content() {
                     prev === "privacy" ? null : "privacy"
                   )
                 }
-                className="text-[11px] font-semibold text-[#5B7493] hover:underline shrink-0"
+                className="text-[11px] font-semibold text-[#5B7493] hover:underline shrink-0 pt-0.5"
               >
                 보기
               </button>
             </div>
 
-            <div className="flex items-center justify-between gap-2">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
+            <div className="flex items-start justify-between gap-2">
+              <label className="flex items-start gap-2 cursor-pointer select-none min-w-0 flex-1">
                 <input
                   type="checkbox"
                   checked={agreeContact}
                   onChange={(e) => setAgreeContact(e.target.checked)}
-                  className="w-4 h-4 rounded accent-[#1E88E5]"
+                  className="w-4 h-4 mt-0.5 rounded accent-[#1E88E5] shrink-0"
                 />
-                <span className="text-xs font-bold text-[#102A4E]">
+                <span className="text-xs font-bold text-[#102A4E] leading-snug break-keep">
                   [필수] 당첨 시 이 이메일로 연락받는 것에 동의
                 </span>
               </label>
@@ -381,7 +381,7 @@ function LoginS02Content() {
                     prev === "contact" ? null : "contact"
                   )
                 }
-                className="text-[11px] font-semibold text-[#5B7493] hover:underline shrink-0"
+                className="text-[11px] font-semibold text-[#5B7493] hover:underline shrink-0 pt-0.5"
               >
                 보기
               </button>

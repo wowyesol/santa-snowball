@@ -16,10 +16,13 @@ import {
   uploadVerificationImage,
 } from "@/lib/supabase";
 
+const GEMINI_STUDENT_SIGNUP_URL =
+  "https://gemini.google/students/?utm_source=student&utm_mediu";
+
 /**
  * S08 Gemini 가입 인증 제출 (/verify) — ★주문 영수증 캡처 1장 실제 업로드 + 추천인 입력 및 실시간 DB 검증★
  * - 상태 분기: 미제출(ready) / 심사 중(pending) / 승인 완료(approved) / 반려됨(rejected, 재제출 허용)
- * - 1. Gemini 대학생 플랜 가입하기 ([Gemini 가입 바로가기] 클릭 시 tracking_clicked_at 기록 -> 미클릭 시 제출 버튼 비활성화)
+ * - 1. Gemini 대학생 플랜 가입하기 ([Gemini 가입 바로가기] 클릭 시 tracking_clicked_at 기록 + [가입 링크 복사하기] 보조 버튼)
  * - 2. 주문 영수증 제출하기 (Gemini 대학생 플랜 가입 주문 영수증 캡처 1장 업로드 + [캡처 예시 보기] 클릭 시 /captureexample.png 모달 노출)
  * - 3. 추천인 친구 닉네임 입력 (선택, 친구 링크 유입 시 자동 입력, 실시간 DB 검증)
  * - 4. 허위 인증 회수 안내 + 유의사항 체크박스 + [제출하기]
@@ -32,8 +35,9 @@ export default function VerifyPage() {
     null
   );
 
-  // 1. 가입 링크 클릭 기록 시각
+  // 1. 가입 링크 클릭 기록 시각 & 링크 복사 토스트
   const [clickedAt, setClickedAt] = useState<string | null>(null);
+  const [copyToast, setCopyToast] = useState<string | null>(null);
 
   // 2. Gemini 대학생 플랜 가입 주문 영수증 캡처 1장 업로드 상태
   const [imageUrl1, setImageUrl1] = useState<string>("");
@@ -113,16 +117,38 @@ export default function VerifyPage() {
     };
   }, [referrerNickname, mySnowball]);
 
-  // 1. [Gemini 가입 바로가기] 클릭 핸들러
-  const handleSignupLinkClick = async () => {
+  // 1. [Gemini 가입 바로가기] 클릭 핸들러 (새 탭 열기 + tracking_clicked_at 기록)
+  const handleSignupLinkClick = () => {
     if (!mySnowball) return;
-    const nowIso = await recordTrackingClick(mySnowball.id);
-    setClickedAt(nowIso);
-    if (typeof window !== "undefined") {
-      window.open(
-        "https://gemini.google.com/student?utm_source=gsa_sungshin",
-        "_blank",
-        "noopener,noreferrer"
+    const optimisticIso = new Date().toISOString();
+    setClickedAt(optimisticIso);
+    recordTrackingClick(mySnowball.id).then((savedIso) => {
+      setClickedAt(savedIso);
+    });
+  };
+
+  // 1-2. [가입 링크 복사하기] 보조 버튼 클릭 핸들러 (인앱 브라우저/모바일 환경 대응)
+  const handleCopySignupLink = async () => {
+    if (mySnowball) {
+      const optimisticIso = new Date().toISOString();
+      setClickedAt((prev) => prev || optimisticIso);
+      recordTrackingClick(mySnowball.id).then((savedIso) => {
+        setClickedAt(savedIso);
+      });
+    }
+
+    try {
+      await navigator.clipboard.writeText(GEMINI_STUDENT_SIGNUP_URL);
+      const msg =
+        "가입 링크가 복사되었어요! 크롬이나 사파리 주소창에 붙여넣어 주세요.";
+      setCopyToast(msg);
+      setTimeout(() => {
+        setCopyToast((prev) => (prev === msg ? null : prev));
+      }, 3200);
+    } catch {
+      window.prompt(
+        "아래 가입 링크를 복사해 크롬이나 사파리 주소창에 붙여넣어 주세요:",
+        GEMINI_STUDENT_SIGNUP_URL
       );
     }
   };
@@ -245,13 +271,19 @@ export default function VerifyPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col px-5 pt-6 pb-12">
+      {copyToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[90] w-[92%] max-w-[360px] px-4 py-3 rounded-2xl bg-emerald-600 text-white text-xs font-extrabold text-center shadow-2xl break-keep leading-relaxed">
+          ✓ {copyToast}
+        </div>
+      )}
+
+      <div className="flex flex-col px-5 pt-6 pb-12 break-keep">
         {/* 상단 타이틀 및 상태 뱃지 */}
         <div className="text-center mb-5">
           <h1 className="text-2xl font-extrabold text-white tracking-tight mb-1.5">
             Gemini 가입 인증
           </h1>
-          <p className="text-xs text-sky-100/90 leading-relaxed mb-2.5">
+          <p className="text-xs text-sky-100/90 leading-relaxed mb-2.5 break-keep">
             {isPending || isApproved
               ? "이 링크로 Gemini에 새로 가입하고 인증하면 응모권 +100 · 사인업 레벨 +1"
               : "Gemini 대학생 플랜 가입 주문 영수증 캡처 1장이 승인되면 응모권 100장을 받을 수 있어요."}
@@ -324,16 +356,16 @@ export default function VerifyPage() {
               {existingVerif.image_url_1 &&
               (existingVerif.image_url_1.startsWith("http") ||
                 existingVerif.image_url_1.startsWith("data:image")) ? (
-                <div className="h-40 w-full rounded-xl border border-[#BFD8F5] bg-white overflow-hidden flex items-center justify-center p-1">
+                <div className="min-h-[160px] h-auto w-full rounded-xl border border-[#BFD8F5] bg-white overflow-hidden flex items-center justify-center p-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={existingVerif.image_url_1}
                     alt="제출한 주문 영수증 캡처"
-                    className="w-full h-full object-contain"
+                    className="max-h-52 w-full h-auto object-contain"
                   />
                 </div>
               ) : (
-                <div className="h-28 rounded-xl border border-[#BFD8F5] bg-[#E8F2FF] flex items-center justify-center text-xs font-bold text-[#102A4E] p-3 text-center">
+                <div className="min-h-[112px] h-auto rounded-xl border border-[#BFD8F5] bg-[#E8F2FF] flex items-center justify-center text-xs font-bold text-[#102A4E] p-3 text-center">
                   제출된 주문 영수증 캡처 확인 중
                 </div>
               )}
@@ -399,18 +431,28 @@ export default function VerifyPage() {
               <h2 className="text-xs font-extrabold text-[#102A4E] mb-1">
                 1. Gemini 대학생 플랜 가입하기
               </h2>
-              <p className="text-[11px] text-[#5B7493] mb-3">
+              <p className="text-[11px] text-[#5B7493] mb-3 break-all">
                 로그인한 계정: {userEmail}
               </p>
 
-              <button
-                type="button"
+              <a
+                href={GEMINI_STUDENT_SIGNUP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={handleSignupLinkClick}
-                className="w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] text-white text-xs font-extrabold transition-colors shadow-xs"
+                className="block w-full py-3.5 px-3 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] text-white text-xs font-extrabold text-center transition-colors shadow-xs"
               >
                 {clickedAt
                   ? "Gemini 가입 바로가기 (다시 열기)"
                   : "Gemini 가입 바로가기"}
+              </a>
+
+              <button
+                type="button"
+                onClick={handleCopySignupLink}
+                className="mt-2 w-full py-2.5 px-3 rounded-xl border border-[#BFD8F5] bg-white hover:bg-[#EBF4FF] text-[#102A4E] text-xs font-extrabold text-center transition-colors"
+              >
+                가입 링크 복사하기
               </button>
 
               {clickedAt && (
@@ -430,11 +472,11 @@ export default function VerifyPage() {
                   !
                 </span>
                 <div>
-                  <p className="text-[11px] font-extrabold text-[#102A4E]">
-                    대학생 혜택 최초 신청자만 가능해요
+                  <p className="text-[11px] font-extrabold text-[#102A4E] break-keep">
+                    반드시 해당 링크로 가입해야 인정돼요
                   </p>
-                  <p className="text-[10px] text-[#5B7493] leading-relaxed">
-                    반드시 이 링크로, 지금 로그인한 구글 계정으로 새로 가입해야 인정돼요.
+                  <p className="text-[10px] text-[#5B7493] leading-relaxed mt-0.5 break-keep">
+                    지금 로그인한 구글 계정으로 대학생 혜택 최초로 가입해야 인정됩니다.
                   </p>
                 </div>
               </div>
@@ -451,7 +493,7 @@ export default function VerifyPage() {
               </p>
 
               {uploadingImage ? (
-                <div className="h-40 w-full rounded-2xl border border-[#90B8E8] bg-[#E8F2FF] flex flex-col items-center justify-center gap-2">
+                <div className="min-h-[150px] h-auto py-6 px-4 w-full rounded-2xl border border-[#90B8E8] bg-[#E8F2FF] flex flex-col items-center justify-center gap-2 text-center">
                   <div className="w-6 h-6 rounded-full border-2 border-[#1E88E5]/30 border-t-[#1E88E5] animate-spin" />
                   <span className="text-xs font-bold text-[#102A4E]">
                     이미지를 준비하고 있어요...
@@ -459,13 +501,13 @@ export default function VerifyPage() {
                 </div>
               ) : imageUrl1 ? (
                 <div>
-                  <div className="relative h-44 w-full rounded-2xl bg-[#DCEBFA] border border-[#90B8E8] overflow-hidden flex items-center justify-center">
+                  <div className="relative min-h-[168px] h-auto w-full rounded-2xl bg-[#DCEBFA] border border-[#90B8E8] overflow-hidden flex items-center justify-center p-1">
                     {preview1 ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={preview1}
                         alt="Gemini 대학생 플랜 가입 주문 영수증 캡처 1장"
-                        className="w-full h-full object-contain bg-white"
+                        className="max-h-56 w-full h-auto object-contain bg-white rounded-xl"
                       />
                     ) : (
                       <span className="text-xs font-bold text-[#102A4E]">
@@ -494,11 +536,11 @@ export default function VerifyPage() {
                   </div>
                 </div>
               ) : (
-                <label className="h-40 w-full rounded-2xl border-2 border-dashed border-[#90B8E8] bg-[#E8F2FF] hover:bg-[#DCEBFA] flex flex-col items-center justify-center cursor-pointer transition-colors">
-                  <span className="text-xs font-extrabold text-[#102A4E]">
+                <label className="min-h-[150px] h-auto py-5 px-4 w-full rounded-2xl border-2 border-dashed border-[#90B8E8] bg-[#E8F2FF] hover:bg-[#DCEBFA] flex flex-col items-center justify-center text-center cursor-pointer transition-colors">
+                  <span className="text-xs font-extrabold text-[#102A4E] break-keep">
                     + 가입 주문 영수증 캡처 업로드
                   </span>
-                  <span className="text-[11px] text-[#5B7493] mt-1">
+                  <span className="text-[11px] text-[#5B7493] mt-1 leading-relaxed break-keep">
                     Gemini 대학생 플랜 가입 주문 영수증 캡처 1장 (JPG/PNG)
                   </span>
                   <input

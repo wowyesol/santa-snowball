@@ -107,13 +107,13 @@ export default function ReferralPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col px-5 pt-6 pb-12">
+      <div className="flex flex-col px-5 pt-6 pb-12 break-keep">
         {/* 상단 타이틀 */}
         <div className="text-center mb-5">
           <h1 className="text-2xl font-extrabold text-white tracking-tight mb-1.5">
             추천 현황
           </h1>
-          <p className="text-xs text-sky-100/90 leading-relaxed">
+          <p className="text-xs text-sky-100/90 leading-relaxed break-keep">
             친구가 Gemini 가입 인증에서 나를 추천인으로 입력하면 응모권 +50장!
           </p>
         </div>
@@ -121,20 +121,20 @@ export default function ReferralPage() {
         {/* 1. 내 닉네임 & 공유 링크 복사 카드 */}
         <section className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md mb-3 text-left">
           <div className="flex items-center justify-between gap-2 mb-3">
-            <span className="text-xs font-extrabold text-[#102A4E]">
+            <span className="text-xs font-extrabold text-[#102A4E] break-keep">
               내 닉네임 · {mySnowball.nickname}
             </span>
             <button
               type="button"
               onClick={() => handleCopy("nick")}
-              className="px-3 py-1 rounded-full border border-[#BFD8F5] bg-white hover:bg-[#EBF4FF] text-[10px] font-extrabold text-[#102A4E] transition-colors"
+              className="shrink-0 px-3 py-1 rounded-full border border-[#BFD8F5] bg-white hover:bg-[#EBF4FF] text-[10px] font-extrabold text-[#102A4E] transition-colors"
             >
               {copiedType === "nick" ? "✓ 복사됨" : "닉네임 복사"}
             </button>
           </div>
 
-          <div className="w-full px-3 py-2 rounded-xl bg-[#E6F1FC] flex items-center justify-between gap-2">
-            <span className="text-[11px] text-[#5B7493] font-mono truncate">
+          <div className="w-full px-3 py-2.5 rounded-xl bg-[#E6F1FC] flex items-center justify-between gap-2">
+            <span className="text-[11px] text-[#5B7493] font-mono break-all leading-snug">
               {shareUrl}
             </span>
             <button
@@ -167,7 +167,7 @@ export default function ReferralPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between text-[10px] font-bold text-[#5B7493] mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] font-bold text-[#5B7493] mb-2">
             <span className={levelInfo.rawLevel >= 0 ? "text-[#1E88E5]" : ""}>
               LV0
             </span>
@@ -216,7 +216,7 @@ export default function ReferralPage() {
             ].map((item) => (
               <div key={item.title} className="flex flex-col items-center">
                 <div
-                  className={`w-20 h-20 rounded-full border flex items-center justify-center p-2 mb-1.5 ${
+                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full border flex items-center justify-center p-1.5 mb-1.5 ${
                     item.reached
                       ? "border-[#1E88E5] bg-[#E6F1FC] shadow-xs"
                       : "border-dashed border-[#90B8E8] bg-[#EBF4FF]/70"
@@ -226,13 +226,15 @@ export default function ReferralPage() {
                   <img
                     src={item.img}
                     alt={item.title}
-                    className="w-14 h-14 object-contain"
+                    className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
                   />
                 </div>
-                <span className="text-[10px] font-extrabold text-[#102A4E]">
+                <span className="text-[10px] font-extrabold text-[#102A4E] leading-tight break-keep">
                   {item.title}
                 </span>
-                <span className="text-[9px] text-[#5B7493]">{item.sub}</span>
+                <span className="text-[9px] text-[#5B7493] mt-0.5 break-keep">
+                  {item.sub}
+                </span>
               </div>
             ))}
           </div>
@@ -249,7 +251,7 @@ export default function ReferralPage() {
               <p className="text-xs font-bold text-sky-100/80 mb-1">
                 아직 없어요
               </p>
-              <p className="text-[11px] text-sky-200/70">
+              <p className="text-[11px] text-sky-200/70 break-keep">
                 링크를 공유하고, 친구가 가입할 때 내 닉네임을 입력하게 해 주세요
               </p>
             </div>
@@ -268,12 +270,12 @@ export default function ReferralPage() {
                     key={item.id}
                     className="py-3 flex items-center justify-between gap-2"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-7 h-7 rounded-full bg-sky-200/30 flex items-center justify-center text-xs shrink-0">
                         ⛄
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-extrabold text-white truncate">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-extrabold text-white break-keep">
                           {item.nickname}
                         </p>
                         <p className="text-[10px] text-sky-200/75">{dateLabel}</p>

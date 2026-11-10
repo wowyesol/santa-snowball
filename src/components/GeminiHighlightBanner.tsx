@@ -37,8 +37,8 @@ export default function GeminiHighlightBanner({
       onClick={handleBannerClick}
       className="group relative w-full p-[2px] rounded-2xl bg-gradient-to-r from-amber-300 via-emerald-300 to-sky-400 shadow-[0_0_20px_rgba(251,191,36,0.35)] hover:shadow-[0_0_26px_rgba(52,211,153,0.5)] active:scale-[0.99] transition-all text-left"
     >
-      <div className="w-full rounded-[14px] bg-gradient-to-r from-[#0F2442] via-[#163862] to-[#1A4977] px-4 py-3.5 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="w-full h-auto rounded-[14px] bg-gradient-to-r from-[#0F2442] via-[#163862] to-[#1A4977] px-3.5 py-3.5 flex items-center justify-between gap-2.5">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* 빛나는 Gemini 아이콘 박스 */}
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-300 via-teal-200 to-sky-300 text-[#0B1528] flex flex-col items-center justify-center shrink-0 shadow-md">
             <span className="text-sm font-black leading-none">✦</span>
@@ -47,8 +47,8 @@ export default function GeminiHighlightBanner({
             </span>
           </div>
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 mb-0.5">
+          <div className="min-w-0 flex-1 break-keep">
+            <div className="flex flex-wrap items-center gap-1.5 mb-1">
               <span className="inline-block px-2 py-0.5 rounded-full bg-amber-300 text-[#0B1528] text-[9px] font-black tracking-tight">
                 SPECIAL BONUS
               </span>
@@ -63,11 +63,11 @@ export default function GeminiHighlightBanner({
                 </span>
               )}
             </div>
-            <p className="text-[13px] font-extrabold text-white truncate">
+            <p className="text-[13px] font-extrabold text-white leading-snug break-keep">
               Gemini 가입 인증 시 응모권{" "}
               <span className="text-amber-300">+100장</span>
             </p>
-            <p className="text-[11px] text-emerald-200/90 truncate">
+            <p className="text-[11px] text-emerald-200/90 leading-snug mt-0.5 break-keep">
               {subtitle}
             </p>
           </div>

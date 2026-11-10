@@ -139,7 +139,7 @@ function OpenSnowballContent() {
             isShaking={isShaking}
             showShakeBadge={true}
           />
-          <div className="mx-auto mt-1 w-40 rounded-lg bg-white/90 py-1.5 text-center text-xs font-extrabold text-slate-800 shadow">
+          <div className="mx-auto mt-1 min-w-[140px] max-w-full px-4 py-1.5 rounded-lg bg-white/90 text-center text-xs font-extrabold text-slate-800 shadow break-keep">
             {snowball.nickname}
           </div>
         </div>

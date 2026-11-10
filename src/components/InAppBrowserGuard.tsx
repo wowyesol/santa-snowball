@@ -168,7 +168,7 @@ export default function InAppBrowserGuard({
             <li>3. 주소창에 붙여넣어요</li>
           </ol>
 
-          <div className="w-full px-3.5 py-2.5 rounded-xl bg-[#E5F0FC] text-[11px] text-[#5B7493] font-mono truncate mb-3">
+          <div className="w-full px-3.5 py-2.5 rounded-xl bg-[#E5F0FC] text-[11px] text-[#5B7493] font-mono break-all leading-snug mb-3">
             {currentUrl}
           </div>
 
@@ -180,22 +180,22 @@ export default function InAppBrowserGuard({
             {copied ? "✓ 링크가 복사되었어요!" : "링크 복사"}
           </button>
 
-          <div className="w-full rounded-2xl border border-[#BFD8F5] bg-[#E8F2FF] flex flex-col items-center justify-center text-center p-4 mb-3">
+          <div className="w-full h-auto rounded-2xl border border-[#BFD8F5] bg-[#E8F2FF] flex flex-col items-center justify-center text-center p-4 mb-3 break-keep">
             <span className="text-xs font-extrabold text-[#102A4E]">
               🧭 Safari에서 여는 방법
             </span>
-            <span className="text-[11px] text-[#5B7493] mt-1 leading-relaxed">
+            <span className="text-[11px] text-[#5B7493] mt-1 leading-relaxed break-keep">
               Safari 앱 실행 → 상단 또는 하단 주소창 터치 → 복사한 링크 붙여넣기 후 이동
             </span>
           </div>
 
-          <p className="text-[10px] text-[#5B7493]">
+          <p className="text-[10px] text-[#5B7493] break-keep">
             복사되는 링크 = 원래 URL 그대로 (친구 스노우볼 정보 포함)
           </p>
         </div>
       ) : (
         /* S00 · Android 카드 */
-        <div className="w-full rounded-3xl bg-[#F4F9FF] text-[#0B1528] p-5 shadow-2xl border border-white/60 text-left">
+        <div className="w-full rounded-3xl bg-[#F4F9FF] text-[#0B1528] p-5 shadow-2xl border border-white/60 text-left break-keep">
           <span className="inline-block px-3 py-1 rounded-full bg-[#DCEBFA] text-[#102A4E] text-[11px] font-bold mb-3">
             Android · {info.appName}
           </span>
@@ -215,12 +215,12 @@ export default function InAppBrowserGuard({
             Chrome으로 열기
           </button>
 
-          <p className="text-[11px] text-[#5B7493] mb-2">
+          <p className="text-[11px] text-[#5B7493] mb-2 break-keep">
             버튼이 안 되면 링크를 복사해 Chrome 주소창에 붙여넣어요
           </p>
 
-          <div className="w-full px-3 py-2 rounded-xl bg-[#E5F0FC] flex items-center justify-between gap-2 mb-3">
-            <span className="text-[11px] text-[#5B7493] font-mono truncate">
+          <div className="w-full px-3 py-2.5 rounded-xl bg-[#E5F0FC] flex items-center justify-between gap-2 mb-3">
+            <span className="text-[11px] text-[#5B7493] font-mono break-all leading-snug">
               {currentUrl}
             </span>
             <button

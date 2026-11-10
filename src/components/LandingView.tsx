@@ -152,22 +152,22 @@ export default function LandingView() {
       {/* S00 인앱 브라우저 자동 감지 모달 */}
       <InAppBrowserGuard />
 
-      <div className="flex flex-col items-center px-5 pt-5 pb-12 text-center">
+      <div className="flex flex-col items-center px-5 pt-5 pb-12 text-center break-keep">
         {/* 친구 공유 링크 진입 시 상단 초대 안내 배너 */}
         {isFriendInvite && friendSnowball && (
           <section
             aria-label="친구 초대 배너"
-            className="w-full mb-6 p-4 rounded-2xl bg-[#EBF4FF] text-[#0B1528] shadow-md text-left"
+            className="w-full mb-6 p-4 rounded-2xl bg-[#EBF4FF] text-[#0B1528] shadow-md text-left break-keep"
           >
             <div className="flex items-center gap-2.5 mb-1.5">
               <div className="w-7 h-7 rounded-full bg-[#C7DDF7] flex items-center justify-center text-sm shrink-0">
                 ⛄
               </div>
-              <p className="text-[13px] font-extrabold text-[#102A4E]">
+              <p className="text-[13px] font-extrabold text-[#102A4E] leading-snug break-keep">
                 {friendSnowball.nickname}님이 스노우볼에 초대했어요
               </p>
             </div>
-            <p className="text-xs text-[#5B7493] pl-0.5">
+            <p className="text-xs text-[#5B7493] pl-0.5 leading-relaxed break-keep">
               로그인하면 {friendSnowball.nickname}의 스노우볼에 편지를 넣을 수 있어요
             </p>
           </section>

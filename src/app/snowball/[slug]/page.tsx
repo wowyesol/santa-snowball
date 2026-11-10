@@ -547,11 +547,11 @@ function SnowballDetailContent() {
                   className="w-full p-3.5 rounded-2xl bg-white text-xs font-medium text-[#0B1528] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3898FF] shadow-md resize-none"
                 />
 
-                <div className="mt-1.5 mb-3 flex items-center justify-between text-[10px] text-sky-200/85">
-                  <span>
+                <div className="mt-1.5 mb-3 flex flex-wrap items-center justify-between gap-1 text-[10px] text-sky-200/85 break-keep">
+                  <span className="leading-snug">
                     12월에 {targetSnowball.nickname}가 열어볼 수 있어요 · 보낸 사람 닉네임은 공개돼요
                   </span>
-                  <span className="font-mono font-bold shrink-0 ml-2">
+                  <span className="font-mono font-bold shrink-0">
                     {letterContent.trim().length} / 200자 (최소 15자)
                   </span>
                 </div>
