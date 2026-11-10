@@ -30,7 +30,6 @@ const SUB_ROUTES = new Set([
   "/open",
   "/result",
   "/guide",
-  "/admin",
 ]);
 
 /**
@@ -57,15 +56,17 @@ export default function AppShell({
   const syncHeader = useCallback(async () => {
     const current = await getCurrentAuthAndSnowball();
     setAuth(current);
-    // 메인 사이트 최초 진입 시 세션당 1회 'page_view' 기록 (sessionStorage 중복 방지)
-    logPageViewOncePerSession(current.snowball?.slug ?? null);
+    // 메인 사이트 최초 진입 시 세션당 1회 'page_view' 기록 (/admin 제외, sessionStorage 중복 방지)
+    if (pathname !== "/admin") {
+      logPageViewOncePerSession(current.snowball?.slug ?? null);
+    }
     if (current.snowball) {
       const summary = await getTicketSummary(current.snowball.id);
       setTicketBadgeCount(summary.availableTickets);
     } else {
       setTicketBadgeCount(0);
     }
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     syncHeader();

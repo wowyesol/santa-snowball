@@ -2,15 +2,71 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import AppShell from "@/components/AppShell";
 import {
   AdminDashboardData,
   GeminiVerification,
   SAMPLE_PRIZES,
   getAdminDashboardData,
   getCurrentAuthAndSnowball,
+  signOutAll,
+  supabase,
   updateGeminiVerificationStatusForAdmin,
 } from "@/lib/supabase";
+
+/**
+ * 관리자 페이지 전용 독립 프레임 (사용자 스노우볼/응모 페이지로 이동하는 링크를 원천 제거하여 동선 혼선 방지)
+ */
+function AdminStandaloneShell({
+  children,
+  unlocked,
+  onLockAdmin,
+}: {
+  children: React.ReactNode;
+  unlocked?: boolean;
+  onLockAdmin?: () => void;
+}) {
+  return (
+    <div className="relative w-full max-w-[430px] min-h-screen mx-auto flex flex-col justify-between bg-gradient-to-b from-[#0B1528] via-[#13315C] to-[#2B6CB0] text-white shadow-2xl">
+      <div className="relative z-10 flex flex-col flex-1">
+        {/* 관리자 전용 상단 고정 헤더 (사용자 웹페이지 이동 버튼 없음) */}
+        <header className="sticky top-0 z-40 w-full bg-[#152238]/95 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="차곡차곡 크리스마스 관리자"
+              className="h-5 w-auto object-contain select-none"
+            />
+            <span className="px-2 py-0.5 rounded-full bg-amber-300 text-[#0B1528] text-[10px] font-black tracking-tight">
+              ADMIN
+            </span>
+          </div>
+
+          {unlocked && onLockAdmin ? (
+            <button
+              type="button"
+              onClick={onLockAdmin}
+              className="px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-[11px] font-extrabold transition-colors shrink-0"
+            >
+              잠금 · 로그아웃
+            </button>
+          ) : (
+            <span className="text-[11px] font-bold text-sky-200/80">
+              관리자 전용
+            </span>
+          )}
+        </header>
+
+        <main className="flex flex-col flex-1">{children}</main>
+      </div>
+
+      {/* 관리자 전용 하단 푸터 (사용자 페이지 이동 링크 없음) */}
+      <footer className="relative z-10 w-full bg-[#0B1528]/90 text-sky-200/70 py-4 px-4 text-center text-[10px] border-t border-white/10">
+        2026 Google Student Ambassador · 성신여대 | 관리자 전용 운영 시스템
+      </footer>
+    </div>
+  );
+}
 
 // 허용된 관리자 이메일 목록 (아래 3개 계정 중 하나로 구글 로그인된 상태면 즉시 오픈)
 const ADMIN_EMAILS = [
@@ -189,20 +245,49 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleLockAdmin = async () => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
+    }
+    if (loggedAdminEmail) {
+      await signOutAll();
+      setLoggedAdminEmail(null);
+    }
+    setUnlocked(false);
+    setPinInput("");
+  };
+
+  const handleAdminGoogleLogin = async () => {
+    if (typeof window === "undefined") return;
+    setPinError(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/admin`,
+        queryParams: {
+          prompt: "select_account",
+        },
+      },
+    });
+    if (error) {
+      setPinError(`구글 로그인 오류: ${error.message}`);
+    }
+  };
+
   if (authChecking) {
     return (
-      <AppShell>
+      <AdminStandaloneShell>
         <div className="py-24 text-center text-xs text-white/80">
           관리자 권한을 확인하는 중입니다...
         </div>
-      </AppShell>
+      </AdminStandaloneShell>
     );
   }
 
   // 1) 마스터 비밀번호 잠금 화면 (비로그인 또는 비허용 이메일 계정)
   if (!unlocked) {
     return (
-      <AppShell>
+      <AdminStandaloneShell>
         <div className="flex flex-col px-5 pt-10 pb-14 text-left break-keep">
           <div className="w-full rounded-3xl bg-[#F4F9FF] text-[#0B1528] p-6 shadow-xl">
             <span className="inline-block px-3 py-1 rounded-full bg-[#1E88E5] text-white text-[11px] font-extrabold mb-3">
@@ -211,9 +296,28 @@ export default function AdminDashboardPage() {
             <h1 className="text-xl font-extrabold text-[#102A4E] mb-1.5">
               관리자 통합 대시보드
             </h1>
-            <p className="text-xs text-[#5B7493] leading-relaxed mb-5">
-              지정된 관리자 구글 계정으로 로그인하거나 마스터 비밀번호를 입력해 접속할 수 있습니다.
+            <p className="text-xs text-[#5B7493] leading-relaxed mb-4">
+              허용된 관리자 구글 계정으로 로그인하거나 마스터 비밀번호를 입력해 접속할 수 있습니다.
             </p>
+
+            <button
+              type="button"
+              onClick={handleAdminGoogleLogin}
+              className="w-full py-3.5 px-4 rounded-xl bg-white border border-[#BFD8F5] hover:bg-[#EBF4FF] text-xs font-extrabold text-[#102A4E] flex items-center justify-center gap-2 shadow-2xs transition-colors mb-4"
+            >
+              <span className="w-5 h-5 rounded-full bg-[#E6F1FC] text-[#1E88E5] font-black flex items-center justify-center text-[11px]">
+                G
+              </span>
+              <span>관리자 구글 계정으로 로그인</span>
+            </button>
+
+            <div className="relative flex items-center justify-center my-3">
+              <div className="border-t border-[#DCEBFA] w-full" />
+              <span className="bg-[#F4F9FF] px-2 text-[10px] font-bold text-[#7A93B2] shrink-0">
+                또는 마스터 비밀번호 입력
+              </span>
+              <div className="border-t border-[#DCEBFA] w-full" />
+            </div>
 
             <form onSubmit={handlePinSubmit} className="space-y-3">
               <div>
@@ -243,7 +347,7 @@ export default function AdminDashboardPage() {
             </form>
           </div>
         </div>
-      </AppShell>
+      </AdminStandaloneShell>
     );
   }
 
@@ -271,7 +375,7 @@ export default function AdminDashboardPage() {
     prizeStats.find((p) => p.prizeId === selectedPrizeId) || prizeStats[0];
 
   return (
-    <AppShell>
+    <AdminStandaloneShell unlocked={unlocked} onLockAdmin={handleLockAdmin}>
       {toastMsg && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[90] w-[92%] max-w-[380px] px-4 py-3 rounded-2xl bg-emerald-600 text-white text-xs font-extrabold text-center shadow-2xl break-keep">
           {toastMsg}
@@ -913,6 +1017,6 @@ export default function AdminDashboardPage() {
           </div>,
           document.body
         )}
-    </AppShell>
+    </AdminStandaloneShell>
   );
 }
