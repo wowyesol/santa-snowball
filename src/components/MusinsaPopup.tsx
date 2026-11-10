@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
-// 팝업 컴포넌트 Props 인터페이스(Interface) 정의
 interface MusinsaPopupProps {
   isOpen: boolean;
   onClose: () => void;
@@ -10,69 +10,84 @@ interface MusinsaPopupProps {
 }
 
 /**
- * S01 첫 화면 - P00 무신사 상품권 응모 팝업(Popup Modal) 컴포넌트
- * 비로그인 상태로 첫 진입 시 화면을 덮도록 노출되며,
- * '닫기' 또는 '응모하러 가기' 버튼 클릭 시 닫히고 기본 화면(또는 로그인 플로우)으로 전환됩니다.
+ * P00: 무신사 20만 원 응모하기 팝업 (S01 비로그인 첫 진입 시 자동 노출)
+ * - 최상위 뷰포트(document.body) 기준 fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm 구조 적용
+ * - 어떤 화면 길이나 스크롤 위치에서도 푸터에 가려지거나 잘리지 않고 정중앙에 온전히 노출됩니다.
  */
 export default function MusinsaPopup({
   isOpen,
   onClose,
   onApply,
 }: MusinsaPopupProps) {
-  // 팝업이 닫혀있는 상태(State)라면 렌더링하지 않음
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
+
+  const modalNode = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-5"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="popup-title"
+      aria-labelledby="p00-title"
+      onClick={onClose}
     >
-      {/* 팝업 카드 컨테이너 (모바일 웹 폭에 맞춘 최대 너비 제한) */}
-      <div className="w-full max-w-[340px] rounded-2xl bg-white p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        {/* 상단 닫기 버튼 영역 */}
+      <div
+        className="w-full max-w-[345px] max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl text-[#0B1528]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 우측 상단 닫기 버튼 */}
         <div className="flex justify-end mb-2">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-800 transition-colors py-1 px-1.5 rounded"
-            aria-label="팝업 닫기"
+            className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 py-1 px-1.5"
           >
             <span>닫기</span>
             <span className="text-sm leading-none">✕</span>
           </button>
         </div>
 
-        {/* 무신사 상품권 이미지 플레이스홀더(Placeholder) 영역 */}
-        <div className="w-full h-36 rounded-xl border border-dashed border-neutral-300 bg-neutral-100 flex items-center justify-center mb-5">
-          <span className="text-xs text-neutral-500 font-medium">
-            [무신사 상품권 이미지]
+        {/* 무신사 상품권 일러스트 영역 */}
+        <div className="w-full h-36 rounded-2xl bg-gradient-to-br from-[#0B1528] via-[#13315C] to-[#1E88E5] text-white flex flex-col items-center justify-center mb-5 shadow-inner">
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-300 text-[#0B1528] text-[10px] font-black tracking-tight mb-1.5">
+            1등 경품 · 1명
           </span>
-        </div>
-
-        {/* 팝업 타이틀 및 서브 안내 문구 */}
-        <div className="text-center mb-5">
-          <h2
-            id="popup-title"
-            className="text-lg font-bold text-neutral-900 tracking-tight mb-1.5"
-          >
-            무신사 20만 원 응모하기
-          </h2>
-          <p className="text-xs text-neutral-500 leading-relaxed">
-            로그인하고 친구 스노우볼에 선물 채우고, 나도 선물 받자
+          <p className="text-base font-black tracking-tight">
+            MUSINSA 200,000원
+          </p>
+          <p className="text-[11px] text-sky-100/90 mt-0.5">
+            무신사 모바일 상품권
           </p>
         </div>
 
-        {/* 하단 CTA 버튼 ('응모하러 가기') */}
+        {/* 타이틀 & 서브 문구 */}
+        <div className="text-center mb-5">
+          <h2
+            id="p00-title"
+            className="text-lg font-extrabold text-[#102A4E] tracking-tight mb-1"
+          >
+            무신사 20만 원 응모하기
+          </h2>
+          <p className="text-xs text-[#5B7493]">
+            친구 스노우볼에 편지 채우고, 나도 편지 받자
+          </p>
+        </div>
+
+        {/* 하단 파란색 CTA 버튼 */}
         <button
           type="button"
           onClick={onApply}
-          className="w-full py-3.5 rounded-xl bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-800 active:scale-[0.99] transition-all"
+          className="w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] active:scale-[0.99] text-white text-sm font-extrabold transition-all shadow-sm"
         >
           응모하러 가기
         </button>
       </div>
     </div>
   );
+
+  return createPortal(modalNode, document.body);
 }

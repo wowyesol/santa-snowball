@@ -2,231 +2,231 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import AppShell from "./AppShell";
 import SnowballGraphic from "./SnowballGraphic";
 import MusinsaPopup from "./MusinsaPopup";
+import InAppBrowserGuard from "./InAppBrowserGuard";
+import {
+  Snowball,
+  clearPendingInviteSlug,
+  getCurrentAuthAndSnowball,
+  getPendingInviteSlug,
+  getSnowballBySlug,
+  saveInvitedByNickname,
+  savePendingInviteSlug,
+  setFlashToast,
+} from "@/lib/supabase";
 
 /**
- * S01 첫 화면 (메인 랜딩 페이지 클라이언트 컴포넌트)
- *
- * 포함하는 3가지 핵심 상태(State):
- * 1. S01-landing--general (기본 랜딩 화면)
- * 2. S01-landing--friend-invite (URL에 ?sb=id 파라미터 존재 시 상단 친구 초대 배너 및 친구 스노우볼 미리보기 노출)
- * 3. S01-landing--popup (비로그인 상태로 페이지 첫 진입 시 무신사 상품권 응모 팝업 노출, 닫기/응모하기 클릭 시 닫힘)
+ * S01 첫 화면 & P00 무신사 팝업
+ * - 비로그인 첫 진입 시 P00 무신사 20만 원 응모하기 팝업 자동 노출
+ * - 일반 진입: 타이틀 + 중앙 스노우볼 + [로그인하고 시작하기] + 경품 안내 박스
+ * - 친구 공유 링크 진입 (?sb=[slug]):
+ *   ① 이미 로그인된 유저: targetSlug가 내 스노우볼 slug와 다르면 절대 내 스노우볼로 보내지 않고 즉시 친구 스노우볼 페이지(/snowball/[targetSlug], S05)로 이동!
+ *   ② 비로그인 유저: S01 진입 즉시 localStorage.setItem('pending_friend_slug', targetSlug) 저장 -> 추후 OAuth 및 S02 완료 시 그 친구의 스노우볼(S05)로 이동!
+ * - 존재하지 않는 스노우볼 주소 접속 시: "존재하지 않는 스노우볼입니다." 토스트 알림 후 S01(/)로 자동 이동
  */
 export default function LandingView() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // URL 쿼리 파라미터(Query Parameter)에서 '?sb=id' 값을 읽어옴
-  const sbParam = searchParams.get("sb");
-  const isFriendInvite = Boolean(sbParam && sbParam.trim() !== "");
+  const rawSb = searchParams.get("sb");
+  const sbParam = rawSb && rawSb.trim() !== "" ? rawSb.trim() : null;
 
-  // 초대한 친구 이름 (필요시 파라미터나 API 연동으로 확장 가능, 기본값 '수룡이')
-  const inviterName = "수룡이";
-
-  // 비로그인 여부 상태 (기본값: 비로그인 false)
-  const [isLoggedIn] = useState<boolean>(false);
-
-  // 무신사 상품권 응모 팝업 노출 상태(State) 관리
-  // 비로그인 상태로 페이지 첫 진입 시 화면을 덮도록 true로 초기화
+  const [checking, setChecking] = useState<boolean>(true);
+  const [friendSnowball, setFriendSnowball] = useState<Snowball | null>(null);
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    // 비로그인 상태로 첫 진입 시 팝업 자동 노출
-    if (!isLoggedIn) {
-      setIsPopupOpen(true);
-    }
-  }, [isLoggedIn]);
+    let isMounted = true;
 
-  // 팝업 '닫기' 또는 '응모하러 가기' 버튼 클릭 핸들러(Handler)
-  const handleClosePopup = () => {
+    async function initS01() {
+      // 최우선으로 URL의 sb 파라미터 확인 (React searchParams + window.location.search 이중 체크로 누락 원천 차단)
+      let targetSlug = sbParam;
+      if (!targetSlug && typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromWindow = urlParams.get("sb");
+        if (fromWindow && fromWindow.trim() !== "") {
+          targetSlug = fromWindow.trim();
+        }
+      }
+
+      // URL에 sb 파라미터가 있으면 진입 즉시 localStorage에 pending_friend_slug 저장!
+      if (targetSlug && typeof window !== "undefined") {
+        window.localStorage.setItem("pending_friend_slug", targetSlug);
+        savePendingInviteSlug(targetSlug);
+      }
+
+      const authState = await getCurrentAuthAndSnowball();
+
+      // 1) 친구 공유 링크(?sb=[targetSlug]) 검증
+      let friendData: Snowball | null = null;
+      if (targetSlug) {
+        friendData = await getSnowballBySlug(targetSlug);
+        if (!friendData) {
+          // 존재하지 않거나 삭제된 스노우볼 주소로 접속 시: 토스트 알림 후 기본 S01로 이동
+          clearPendingInviteSlug();
+          setFlashToast("존재하지 않는 스노우볼입니다.");
+          if (isMounted) {
+            setFriendSnowball(null);
+            setChecking(false);
+            router.replace("/");
+          }
+          return;
+        }
+        // 존재하는 친구 스노우볼이면 초대 코드(pending_friend_slug)와 초대자 닉네임을 스토리지에 확정 저장
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("pending_friend_slug", friendData.slug);
+        }
+        savePendingInviteSlug(friendData.slug);
+        saveInvitedByNickname(friendData.nickname);
+      }
+
+      if (!isMounted) return;
+
+      // 2) [핵심 수정 ①] 이미 로그인되어 있고 내 스노우볼이 있는 유저인 경우:
+      //    URL의 targetSlug(또는 저장된 pending_friend_slug)를 최우선 확인하여 내 스노우볼 slug와 다르면
+      //    절대 내 스노우볼(S04)로 보내지 않고 즉시 친구 스노우볼 페이지(/snowball/[targetSlug], S05)로 이동!
+      if (authState.isAuthenticated && authState.snowball) {
+        const mySlug = authState.snowball.slug;
+        const effectiveTargetSlug =
+          friendData?.slug || targetSlug || getPendingInviteSlug();
+
+        if (effectiveTargetSlug && effectiveTargetSlug !== mySlug) {
+          clearPendingInviteSlug();
+          router.replace(
+            `/snowball/${encodeURIComponent(effectiveTargetSlug)}`
+          );
+          return;
+        }
+
+        clearPendingInviteSlug();
+        router.replace(`/snowball/${encodeURIComponent(mySlug)}`);
+        return;
+      }
+
+      setFriendSnowball(friendData);
+      setIsPopupOpen(true); // 비로그인 진입 시 P00 무신사 팝업 자동 노출
+      setChecking(false);
+    }
+
+    initS01();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sbParam, router]);
+
+  const handleGoToS02 = () => {
     setIsPopupOpen(false);
-  };
-
-  // 로그인/시작하기 액션 핸들러
-  const handleStartClick = () => {
-    // 실제 서비스에서는 S02 로그인 화면으로 라우팅(Routing) 처리
-    alert(
-      isFriendInvite
-        ? `[S02 로그인 이동] 로그인 완료 후 ${inviterName}님의 스노우볼(sb=${sbParam})로 복귀합니다.`
-        : "[S02 로그인 이동] 로그인 화면으로 이동합니다."
-    );
-  };
-
-  // 데모/테스트 편의성을 위한 상태 전환 헬퍼 함수 (상단/하단에서 쉽게 세 가지 상태를 검증 가능하도록 지원)
-  const toggleInviteMode = () => {
-    if (isFriendInvite) {
-      router.push("/");
+    const targetSlug = friendSnowball?.slug || sbParam || getPendingInviteSlug();
+    if (targetSlug) {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("pending_friend_slug", targetSlug);
+      }
+      savePendingInviteSlug(targetSlug);
+      if (friendSnowball) {
+        saveInvitedByNickname(friendSnowball.nickname);
+      }
+      router.push(`/login?sb=${encodeURIComponent(targetSlug)}`);
     } else {
-      router.push("/?sb=suryong123");
+      router.push("/login");
     }
   };
+
+  if (checking) {
+    return (
+      <AppShell>
+        <div className="flex flex-col items-center justify-center py-24 gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+          <p className="text-xs text-white/70">스노우볼 우체국을 여는 중...</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const isFriendInvite = Boolean(friendSnowball);
 
   return (
-    <div className="relative w-full max-w-[390px] min-h-screen bg-white flex flex-col justify-between shadow-sm border-x border-neutral-200/80">
-      {/* 개발/검수용 빠른 상태 테스트 바 (화면 최상단에 작게 배치하여 3가지 상태를 즉시 테스트 가능) */}
-      <div className="bg-neutral-800 text-neutral-200 px-3 py-1.5 text-[11px] flex items-center justify-between gap-1">
-        <span className="font-medium text-neutral-300">S01 상태 테스트:</span>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={toggleInviteMode}
-            className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-              isFriendInvite
-                ? "bg-emerald-500 text-white"
-                : "bg-neutral-700 text-neutral-200 hover:bg-neutral-600"
-            }`}
-          >
-            {isFriendInvite ? "초대링크 ON (?sb=id)" : "초대링크 OFF (기본)"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsPopupOpen(true)}
-            className="px-2 py-0.5 rounded bg-neutral-700 hover:bg-neutral-600 text-[10px] font-medium text-neutral-200 transition-colors"
-          >
-            팝업 다시 열기
-          </button>
-        </div>
-      </div>
+    <AppShell>
+      {/* S00 인앱 브라우저 자동 감지 모달 */}
+      <InAppBrowserGuard />
 
-      {/* 상단 영역: 네비게이션 헤더(Header) + 본문 콘텐츠 */}
-      <div className="flex-1 flex flex-col">
-        {/* 1. 상단 네비게이션 바 */}
-        <header className="w-full px-4 py-3 flex items-center justify-between border-b border-neutral-100">
-          {/* 좌측 로고(Logo) 플레이스홀더 */}
-          <div className="px-2.5 py-1 rounded bg-neutral-200 text-neutral-800 text-[11px] font-bold tracking-tight">
-            LOGO 산타보다 빠른 우체국
-          </div>
-
-          {/* 우측 버튼 그룹 (이벤트 안내 / 로그인) */}
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => {
-                const el = document.getElementById("event-info-section");
-                el?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="px-2.5 py-1 rounded-full border border-neutral-300 bg-white text-neutral-700 text-[11px] font-medium hover:bg-neutral-50 transition-colors"
-            >
-              이벤트 안내
-            </button>
-            <button
-              type="button"
-              onClick={handleStartClick}
-              className="px-3 py-1 rounded-full bg-neutral-900 text-white text-[11px] font-semibold hover:bg-neutral-800 transition-colors"
-            >
-              로그인
-            </button>
-          </div>
-        </header>
-
-        {/* 메인 컨텐츠 컨테이너 */}
-        <main className="flex-1 flex flex-col items-center px-5 pt-4 pb-6">
-          {/* 2. 친구 초대 분기 배너: URL에 ?sb=id 파라미터가 존재할 경우 조건부 렌더링 */}
-          {isFriendInvite && (
-            <section
-              aria-label="친구 초대 안내 배너"
-              className="w-full mb-5 p-3.5 rounded-2xl bg-neutral-100 border border-neutral-200/80 flex flex-col gap-2"
-            >
-              <div className="flex items-center gap-2.5">
-                {/* 프로필 아이콘 원형 플레이스홀더 */}
-                <div
-                  className="w-7 h-7 rounded-full bg-neutral-300 shrink-0"
-                  aria-hidden="true"
-                />
-                <p className="text-xs font-bold text-neutral-900">
-                  {inviterName}님이 스노우볼에 초대했어요
-                </p>
-              </div>
-              <p className="text-[11px] text-neutral-500 pl-0.5">
-                로그인하면 {inviterName} 스노우볼에 선물을 넣을 수 있어요 (무료)
-              </p>
-            </section>
-          )}
-
-          {/* 3. 일정 안내 뱃지 및 메인 타이틀 */}
-          <div className="flex flex-col items-center text-center mt-1 mb-2">
-            <span className="inline-block px-3 py-1 rounded-full bg-neutral-100 border border-neutral-200 text-[10px] font-medium text-neutral-600 mb-2.5">
-              11/9 ~ 11/27 선물 모으기 · 12월 열어보기
-            </span>
-            <h1 className="text-[22px] leading-[1.3] font-extrabold text-neutral-900 tracking-tight">
-              차곡차곡 크리스마스
-              <br />
-              산타보다 빠른 우체국
-            </h1>
-          </div>
-
-          {/* 4. 중앙 스노우볼 그래픽 (회색 플레이스홀더) */}
-          <SnowballGraphic
-            isFriendInvite={isFriendInvite}
-            friendName={inviterName}
-          />
-
-          {/* 5. 하단 CTA 영역 ('로그인하고 시작하기' 버튼 및 안내 문구) */}
-          <div className="w-full mt-4 flex flex-col items-center">
-            <p className="text-xs font-semibold text-neutral-700 mb-2.5 text-center">
-              로그인하고 친구 스노우볼에 선물 채우고, 나도 선물 받자
-            </p>
-            <button
-              type="button"
-              onClick={handleStartClick}
-              className="w-full py-3.5 rounded-xl bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-800 active:scale-[0.99] transition-all shadow-sm"
-            >
-              로그인하고 시작하기
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                const el = document.getElementById("event-info-section");
-                el?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="mt-4 text-[11px] text-neutral-400 hover:text-neutral-600 transition-colors"
-            >
-              이벤트 안내 · 유의사항 보기
-            </button>
-          </div>
-
-          {/* 6. 경품 안내 카드 영역 */}
+      <div className="flex flex-col items-center px-5 pt-5 pb-12 text-center">
+        {/* 친구 공유 링크 진입 시 상단 초대 안내 배너 */}
+        {isFriendInvite && friendSnowball && (
           <section
-            id="event-info-section"
-            className="w-full mt-5 p-4 rounded-xl border border-neutral-200 bg-white text-left"
+            aria-label="친구 초대 배너"
+            className="w-full mb-6 p-4 rounded-2xl bg-[#EBF4FF] text-[#0B1528] shadow-md text-left"
           >
-            <h2 className="text-xs font-bold text-neutral-800 mb-1.5">경품</h2>
-            <p className="text-[11px] text-neutral-500 leading-relaxed">
-              1등 무신사 20만 원 · 2등 신세계 10만 원 · 3등 배민 3만 원 · 추첨 투썸
-              1만 원 (총 25명)
+            <div className="flex items-center gap-2.5 mb-1.5">
+              <div className="w-7 h-7 rounded-full bg-[#C7DDF7] flex items-center justify-center text-sm shrink-0">
+                ⛄
+              </div>
+              <p className="text-[13px] font-extrabold text-[#102A4E]">
+                {friendSnowball.nickname}님이 스노우볼에 초대했어요
+              </p>
+            </div>
+            <p className="text-xs text-[#5B7493] pl-0.5">
+              로그인하면 {friendSnowball.nickname}의 스노우볼에 편지를 넣을 수 있어요
             </p>
           </section>
-        </main>
+        )}
+
+        {/* 메인 타이틀 영역 */}
+        <div className="mt-2 mb-3 flex flex-col items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="차곡차곡 크리스마스"
+            className="h-9 w-auto object-contain mb-2"
+          />
+          <p className="text-sm font-medium text-sky-100/90">
+            산타보다 빠른 우편함
+          </p>
+        </div>
+
+        {/* 중앙 스노우볼 이미지 (친구 초대 시 친구의 현재 레벨 0/1/3/10 스노우볼 미리보기, 일반 진입 시 기본 대표 스노우볼) */}
+        <SnowballGraphic
+          level={isFriendInvite && friendSnowball ? friendSnowball.level : 3}
+          overrideImageSrc={
+            isFriendInvite && friendSnowball ? undefined : "/lv3_Snowball.png"
+          }
+          size="lg"
+        />
+
+        {/* 하단 로그인 시작하기 버튼 */}
+        <div className="w-full mt-3">
+          <p className="text-xs font-semibold text-sky-100 mb-3">
+            크리스마스의 설렘을 담아, 친구에게 편지를 남겨보세요
+          </p>
+
+          <button
+            type="button"
+            onClick={handleGoToS02}
+            className="w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] active:scale-[0.99] text-white text-sm font-extrabold shadow-lg transition-all"
+          >
+            로그인하고 시작하기
+          </button>
+        </div>
+
+        {/* 경품 안내 반투명 화이트 그라데이션 박스 */}
+        <section className="w-full mt-5 p-4 rounded-2xl bg-gradient-to-b from-white/95 to-[#CFE4FA]/90 text-[#0B1528] shadow-md">
+          <h2 className="text-xs font-extrabold text-[#102A4E] mb-1">경품</h2>
+          <p className="text-[11px] font-semibold text-[#4A6583] leading-relaxed">
+            무신사 20만 원 · 신세계 10만 원 · 배민 3만 원
+            <br />
+            행운의 선물 - 투썸 1만 원 (총 23명)
+          </p>
+        </section>
       </div>
 
-      {/* 7. 하단 푸터(Footer) 영역 */}
-      <footer className="w-full bg-neutral-100 border-t border-neutral-200/80 py-6 px-4 flex flex-col items-center text-center gap-2.5">
-        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-neutral-300 bg-white text-[11px] font-semibold text-neutral-700 shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-neutral-500" />
-          <span>Built with Gemini</span>
-        </div>
-        <div className="text-[10px] text-neutral-400 space-x-1">
-          <a href="#event-info-section" className="hover:underline">
-            이벤트 안내 · 유의사항
-          </a>
-          <span>|</span>
-          <a href="#privacy" className="hover:underline">
-            개인정보 처리방침
-          </a>
-        </div>
-        <p className="text-[10px] text-neutral-400">
-          2026 Google Student Ambassador · 성신여대
-        </p>
-      </footer>
-
-      {/* 8. 비로그인 첫 진입 시 노출되는 무신사 상품권 응모 팝업 */}
+      {/* P00: 무신사 20만 원 응모하기 팝업 */}
       <MusinsaPopup
         isOpen={isPopupOpen}
-        onClose={handleClosePopup}
-        onApply={handleClosePopup}
+        onClose={() => setIsPopupOpen(false)}
+        onApply={handleGoToS02}
       />
-    </div>
+    </AppShell>
   );
 }

@@ -9,3 +9,86 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
 }
+
+/* ============================================================================
+ * 스노우볼 유리구슬 내부 2단계 눈 내리기 애니메이션 & 흔들기 모션
+ * ========================================================================== */
+
+/* 1단계: 평상시(Idle) 잔잔하게 살랑살랑 내리는 눈송이 (6~10초 주기) */
+@keyframes snowballIdleFall {
+  0% {
+    transform: translate3d(0, -14px, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--snow-opacity, 0.7);
+  }
+  38% {
+    transform: translate3d(var(--snow-sway, 8px), 36%, 0);
+  }
+  68% {
+    transform: translate3d(calc(var(--snow-sway, 8px) * -0.8), 72%, 0);
+  }
+  88% {
+    opacity: var(--snow-opacity, 0.7);
+  }
+  100% {
+    transform: translate3d(4px, 235px, 0);
+    opacity: 0;
+  }
+}
+
+/* 2단계: 흔들기 클릭 시(Shaking) 펑펑 쏟아지며 휘날리는 함박눈 */
+@keyframes snowballBurstFall {
+  0% {
+    transform: translate3d(0, -18px, 0) scale(0.9);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.98;
+  }
+  35% {
+    transform: translate3d(var(--snow-sway, 18px), 42%, 0) scale(1.1);
+  }
+  70% {
+    transform: translate3d(calc(var(--snow-sway, 18px) * -1), 82%, 0) scale(1);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(6px, 240px, 0) scale(0.85);
+    opacity: 0;
+  }
+}
+
+/* 흔들기 클릭 시 스노우볼 전체가 좌우/상하로 경쾌하게 흔들리는 모션 */
+@keyframes snowballGlobeShake {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  10% {
+    transform: translate3d(-8px, -6px, 0) rotate(-6deg) scale(1.04);
+  }
+  22% {
+    transform: translate3d(8px, 4px, 0) rotate(6deg) scale(1.04);
+  }
+  34% {
+    transform: translate3d(-7px, -5px, 0) rotate(-5deg) scale(1.04);
+  }
+  46% {
+    transform: translate3d(7px, 4px, 0) rotate(5deg) scale(1.03);
+  }
+  58% {
+    transform: translate3d(-5px, -3px, 0) rotate(-4deg) scale(1.03);
+  }
+  70% {
+    transform: translate3d(5px, 2px, 0) rotate(3deg) scale(1.02);
+  }
+  84% {
+    transform: translate3d(-3px, -1px, 0) rotate(-2deg) scale(1.01);
+  }
+}
+
+.animate-snowball-shake {
+  animation: snowballGlobeShake 1.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
