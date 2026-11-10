@@ -17,7 +17,7 @@ import {
 } from "@/lib/supabase";
 
 const GEMINI_STUDENT_SIGNUP_URL =
-  "https://gemini.google/students/?utm_source=student&utm_mediu";
+  "https://gemini.google/students/?utm_source=student&utm_medium=social&utm_campaign=microsite_campus_sungshin-a-ambassador";
 
 /**
  * S08 Gemini 가입 인증 제출 (/verify) — ★주문 영수증 캡처 1장 실제 업로드 + 추천인 입력 및 실시간 DB 검증★

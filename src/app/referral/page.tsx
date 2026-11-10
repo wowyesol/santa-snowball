@@ -66,11 +66,23 @@ export default function ReferralPage() {
   const handleCopy = async (type: "nick" | "link") => {
     if (!mySnowball) return;
     const targetText = type === "nick" ? mySnowball.nickname : shareUrl;
+    const shareTitle = `${mySnowball.nickname}님에게 편지를 보내주세요 | 차곡차곡 크리스마스`;
     try {
       await navigator.clipboard.writeText(targetText);
       setCopiedType(type);
       setTimeout(() => setCopiedType(null), 2200);
     } catch {
+      if (type === "link" && typeof navigator !== "undefined" && navigator.share) {
+        try {
+          await navigator.share({
+            title: shareTitle,
+            url: shareUrl,
+          });
+          return;
+        } catch {
+          // 사용자가 공유 시트를 닫은 경우 무시
+        }
+      }
       window.prompt("복사할 텍스트:", targetText);
     }
   };
