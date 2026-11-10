@@ -1215,3 +1215,283 @@ export async function getMyReferralVerifications(
   }
   return (data as GeminiVerification[]) ?? [];
 }
+
+/* ============================================================================
+ * 8. 이벤트 로그 트래킹(event_logs) & 관리자(/admin) 통합 대시보드 집계
+ * ========================================================================== */
+
+export type EventLogType =
+  | "page_view"
+  | "gemini_link_click"
+  | "gemini_link_copy"
+  | "share_click";
+
+export interface EventLogRow {
+  id: string;
+  event_type: EventLogType | string;
+  user_slug: string | null;
+  created_at?: string;
+}
+
+const PAGE_VIEW_SESSION_KEY = "santa_page_view_logged_v1";
+
+/**
+ * 화면 이동이나 클릭 액션을 방해하지 않도록 비동기(Fire-and-forget)로 event_logs 테이블에 기록합니다.
+ */
+export function logEventAsync(
+  eventType: EventLogType,
+  userSlug?: string | null
+): void {
+  void (async () => {
+    try {
+      await supabase.from("event_logs").insert({
+        event_type: eventType,
+        user_slug: userSlug?.trim() || null,
+      });
+    } catch (err) {
+      console.warn("[EventLogs] 기록 중 예외(무시됨):", err);
+    }
+  })();
+}
+
+/**
+ * 메인 사이트 최초 진입 시 세션당 1회만 'page_view' 이벤트를 기록합니다 (새로고침 중복 방지).
+ */
+export function logPageViewOncePerSession(userSlug?: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    const alreadyLogged = window.sessionStorage.getItem(PAGE_VIEW_SESSION_KEY);
+    if (alreadyLogged === "true") return;
+    window.sessionStorage.setItem(PAGE_VIEW_SESSION_KEY, "true");
+    logEventAsync("page_view", userSlug);
+  } catch {
+    // sessionStorage 접근 제한 시에도 1회 기록 시도
+    logEventAsync("page_view", userSlug);
+  }
+}
+
+export interface AdminRaffleRankingEntry {
+  rank: number;
+  snowballId: string;
+  prizeId: string;
+  prizeName: string;
+  prizeShortTitle: string;
+  nickname: string;
+  slug: string;
+  email: string | null;
+  allocatedTickets: number;
+  totalTickets: number;
+  createdAt: string | null;
+}
+
+export interface AdminPrizeStat {
+  prizeId: string;
+  rankBadge: string;
+  shortTitle: string;
+  name: string;
+  emoji: string;
+  totalTicketsSum: number;
+  participantCount: number;
+  maxTickets: number;
+  rankings: AdminRaffleRankingEntry[];
+}
+
+export interface AdminDashboardData {
+  // 방문 및 클릭 지표 (event_logs)
+  pageViewCount: number;
+  geminiLinkClickCount: number;
+  geminiLinkCopyCount: number;
+  geminiTotalClickCount: number;
+  shareClickCount: number;
+  // 참여 및 인증 지표
+  totalSnowballsCount: number;
+  totalLettersCount: number;
+  waitingVerifCount: number;
+  approvedVerifCount: number;
+  rejectedVerifCount: number;
+  referralInputCount: number;
+  // 상세 목록 데이터
+  verifications: GeminiVerification[];
+  prizeStats: AdminPrizeStat[];
+}
+
+/**
+ * [/admin] 관리자 대시보드에 필요한 전체 통계 및 목록을 병렬 조회하여 반환합니다.
+ */
+export async function getAdminDashboardData(): Promise<AdminDashboardData> {
+  const [
+    eventLogsRes,
+    snowballsRes,
+    lettersRes,
+    verificationsRes,
+    allocationsRes,
+  ] = await Promise.all([
+    supabase.from("event_logs").select("id, event_type, user_slug, created_at"),
+    supabase
+      .from("snowballs")
+      .select("id, nickname, slug, ticket_count, gemini_verified, gemini_status, level, created_at"),
+    supabase.from("letters").select("id", { count: "exact", head: true }),
+    supabase
+      .from("gemini_verifications")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("raffle_allocations")
+      .select("*")
+      .order("created_at", { ascending: false }),
+  ]);
+
+  // 1) event_logs 집계
+  let pageViewCount = 0;
+  let geminiLinkClickCount = 0;
+  let geminiLinkCopyCount = 0;
+  let shareClickCount = 0;
+
+  for (const row of (eventLogsRes.data as EventLogRow[]) ?? []) {
+    if (row.event_type === "page_view") pageViewCount += 1;
+    else if (row.event_type === "gemini_link_click") geminiLinkClickCount += 1;
+    else if (row.event_type === "gemini_link_copy") geminiLinkCopyCount += 1;
+    else if (row.event_type === "share_click") shareClickCount += 1;
+  }
+
+  const geminiTotalClickCount = geminiLinkClickCount + geminiLinkCopyCount;
+
+  // 2) snowballs & letters 집계
+  const snowballs = (snowballsRes.data as Snowball[]) ?? [];
+  const totalSnowballsCount = snowballs.length;
+  const totalLettersCount = lettersRes.count ?? 0;
+
+  const snowballMap = new Map<string, Snowball>();
+  for (const sb of snowballs) {
+    snowballMap.set(sb.id, sb);
+  }
+
+  // 3) gemini_verifications 집계
+  const verifications = (verificationsRes.data as GeminiVerification[]) ?? [];
+  let waitingVerifCount = 0;
+  let approvedVerifCount = 0;
+  let rejectedVerifCount = 0;
+  let referralInputCount = 0;
+
+  const emailBySnowballId = new Map<string, string>();
+  for (const v of verifications) {
+    if (v.status === "승인") approvedVerifCount += 1;
+    else if (v.status === "반려") rejectedVerifCount += 1;
+    else waitingVerifCount += 1;
+
+    if (v.referrer_slug && v.referrer_slug.trim() !== "") {
+      referralInputCount += 1;
+    }
+    if (v.snowball_id && v.gemini_email && !emailBySnowballId.has(v.snowball_id)) {
+      emailBySnowballId.set(v.snowball_id, v.gemini_email);
+    }
+  }
+
+  // 4) raffle_allocations 상품별 통계 및 내림차순 랭킹 집계
+  const allocations = (allocationsRes.data as RaffleAllocation[]) ?? [];
+
+  // (prizeId -> (snowballId -> { tickets, createdAt }))
+  const groupedByPrize = new Map<
+    string,
+    Map<string, { tickets: number; createdAt: string | null }>
+  >();
+
+  for (const prize of SAMPLE_PRIZES) {
+    groupedByPrize.set(prize.id, new Map());
+  }
+
+  for (const row of allocations) {
+    const qty = Number(row.allocated_tickets) || 0;
+    if (qty <= 0) continue;
+
+    let prizeMap = groupedByPrize.get(row.prize_id);
+    if (!prizeMap) {
+      prizeMap = new Map();
+      groupedByPrize.set(row.prize_id, prizeMap);
+    }
+
+    const prev = prizeMap.get(row.snowball_id);
+    if (prev) {
+      prizeMap.set(row.snowball_id, {
+        tickets: prev.tickets + qty,
+        createdAt: prev.createdAt || row.created_at || null,
+      });
+    } else {
+      prizeMap.set(row.snowball_id, {
+        tickets: qty,
+        createdAt: row.created_at || null,
+      });
+    }
+  }
+
+  const prizeStats: AdminPrizeStat[] = SAMPLE_PRIZES.map((prize) => {
+    const userMap = groupedByPrize.get(prize.id) || new Map();
+    const rawEntries: Omit<AdminRaffleRankingEntry, "rank">[] = [];
+    let totalTicketsSum = 0;
+    let maxTickets = 0;
+
+    userMap.forEach((val, snowballId) => {
+      totalTicketsSum += val.tickets;
+      if (val.tickets > maxTickets) {
+        maxTickets = val.tickets;
+      }
+      const sb = snowballMap.get(snowballId);
+      rawEntries.push({
+        snowballId,
+        prizeId: prize.id,
+        prizeName: prize.name,
+        prizeShortTitle: prize.shortTitle,
+        nickname: sb?.nickname || "알 수 없음",
+        slug: sb?.slug || snowballId.slice(0, 8),
+        email: emailBySnowballId.get(snowballId) || null,
+        allocatedTickets: val.tickets,
+        totalTickets: Number(sb?.ticket_count) || val.tickets,
+        createdAt: val.createdAt,
+      });
+    });
+
+    // 응모권을 많이 건 순서(내림차순) 정렬 (동률 시 보유 총 응모권 내림차순 -> 응모일시 오름차순)
+    rawEntries.sort((a, b) => {
+      if (b.allocatedTickets !== a.allocatedTickets) {
+        return b.allocatedTickets - a.allocatedTickets;
+      }
+      if (b.totalTickets !== a.totalTickets) {
+        return b.totalTickets - a.totalTickets;
+      }
+      return (a.createdAt || "").localeCompare(b.createdAt || "");
+    });
+
+    const rankings: AdminRaffleRankingEntry[] = rawEntries.map((entry, idx) => ({
+      ...entry,
+      rank: idx + 1,
+    }));
+
+    return {
+      prizeId: prize.id,
+      rankBadge: prize.rankBadge,
+      shortTitle: prize.shortTitle,
+      name: prize.name,
+      emoji: prize.emoji,
+      totalTicketsSum,
+      participantCount: rankings.length,
+      maxTickets,
+      rankings,
+    };
+  });
+
+  return {
+    pageViewCount,
+    geminiLinkClickCount,
+    geminiLinkCopyCount,
+    geminiTotalClickCount,
+    shareClickCount,
+    totalSnowballsCount,
+    totalLettersCount,
+    waitingVerifCount,
+    approvedVerifCount,
+    rejectedVerifCount,
+    referralInputCount,
+    verifications,
+    prizeStats,
+  };
+}

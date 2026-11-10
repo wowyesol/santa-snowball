@@ -20,6 +20,7 @@ import {
   getTicketSummary,
   getVisibleLettersBySnowballId,
   isCampaignOpenDateReached,
+  logEventAsync,
   saveInvitedByNickname,
   savePendingInviteSlug,
   sendGiftLetter,
@@ -144,10 +145,11 @@ function SnowballDetailContent() {
   const isOwnLinkView = isOwner && viewModeParam === "own-link";
 
   // 모든 [내 스노우볼 공유하기] / [공유 링크 보내기] 버튼 클릭 시:
-  // 클립보드에는 깔끔하게 URL만 복사되며, 모바일 navigator.share 사용 시 title 규격을 동일하게 맞춤
+  // event_logs에 'share_click'을 비동기 기록하고, 클립보드에는 깔끔하게 URL만 복사
   const handleCopyMyLink = async () => {
     const ownerToShare = mySnowball || targetSnowball;
     if (!ownerToShare || typeof window === "undefined") return;
+    logEventAsync("share_click", ownerToShare.slug);
     const shareUrl = `${window.location.origin}/?sb=${encodeURIComponent(
       ownerToShare.slug
     )}&utm_source=friend`;

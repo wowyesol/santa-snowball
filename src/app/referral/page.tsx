@@ -10,6 +10,7 @@ import {
   getCurrentAuthAndSnowball,
   getMyReferralVerifications,
   getSnowballLevelInfo,
+  logEventAsync,
 } from "@/lib/supabase";
 
 /**
@@ -65,6 +66,9 @@ export default function ReferralPage() {
 
   const handleCopy = async (type: "nick" | "link") => {
     if (!mySnowball) return;
+    if (type === "link") {
+      logEventAsync("share_click", mySnowball.slug);
+    }
     const targetText = type === "nick" ? mySnowball.nickname : shareUrl;
     const shareTitle = `${mySnowball.nickname}님에게 편지를 보내주세요 | 차곡차곡 크리스마스`;
     try {

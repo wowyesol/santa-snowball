@@ -11,6 +11,7 @@ import {
   getGeminiVerification,
   getInvitedByNickname,
   getSnowballByNickname,
+  logEventAsync,
   recordTrackingClick,
   submitGeminiVerification,
   uploadVerificationImage,
@@ -117,9 +118,10 @@ export default function VerifyPage() {
     };
   }, [referrerNickname, mySnowball]);
 
-  // 1. [Gemini 가입 바로가기] 클릭 핸들러 (새 탭 열기 + tracking_clicked_at 기록)
+  // 1. [Gemini 가입 바로가기] 클릭 핸들러 (새 탭 열기 + tracking_clicked_at 및 event_logs 기록)
   const handleSignupLinkClick = () => {
     if (!mySnowball) return;
+    logEventAsync("gemini_link_click", mySnowball.slug);
     const optimisticIso = new Date().toISOString();
     setClickedAt(optimisticIso);
     recordTrackingClick(mySnowball.id).then((savedIso) => {
@@ -127,8 +129,9 @@ export default function VerifyPage() {
     });
   };
 
-  // 1-2. [가입 링크 복사하기] 보조 버튼 클릭 핸들러 (인앱 브라우저/모바일 환경 대응)
+  // 1-2. [가입 링크 복사하기] 보조 버튼 클릭 핸들러 (인앱 브라우저/모바일 환경 대응 + event_logs 기록)
   const handleCopySignupLink = async () => {
+    logEventAsync("gemini_link_copy", mySnowball?.slug ?? null);
     if (mySnowball) {
       const optimisticIso = new Date().toISOString();
       setClickedAt((prev) => prev || optimisticIso);

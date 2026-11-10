@@ -8,6 +8,7 @@ import {
   consumeFlashToast,
   getCurrentAuthAndSnowball,
   getTicketSummary,
+  logPageViewOncePerSession,
   signOutAll,
 } from "@/lib/supabase";
 
@@ -56,6 +57,8 @@ export default function AppShell({
   const syncHeader = useCallback(async () => {
     const current = await getCurrentAuthAndSnowball();
     setAuth(current);
+    // 메인 사이트 최초 진입 시 세션당 1회 'page_view' 기록 (sessionStorage 중복 방지)
+    logPageViewOncePerSession(current.snowball?.slug ?? null);
     if (current.snowball) {
       const summary = await getTicketSummary(current.snowball.id);
       setTicketBadgeCount(summary.availableTickets);
