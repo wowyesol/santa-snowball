@@ -12,8 +12,12 @@ import {
   updateGeminiVerificationStatusForAdmin,
 } from "@/lib/supabase";
 
-// 허용된 관리자 이메일 목록 (구글 로그인 상태면 암호 없이 즉시 오픈)
-const ADMIN_EMAILS = ["ann871565@gmail.com"];
+// 허용된 관리자 이메일 목록 (아래 3개 계정 중 하나로 구글 로그인된 상태면 즉시 오픈)
+const ADMIN_EMAILS = [
+  "ssoh8201@gmail.com",
+  "ann871565@gmail.com",
+  "bmo11152598@gmail.com",
+];
 
 // 마스터 비밀번호 (비로그인 또는 타 계정 접속 시 사용)
 const MASTER_PASSWORD =
@@ -26,7 +30,7 @@ type FilterStatus = "대기중" | "승인" | "반려" | "전체";
 
 /**
  * [/admin] 관리자 통합 대시보드 (클릭/방문 KPI + 영수증 검수 + 상품별 응모 랭킹)
- * - 보안: ADMIN_EMAILS('ann871565@gmail.com')로 구글 로그인된 경우 암호 입력 없이 즉시 오픈,
+ * - 보안: ADMIN_EMAILS("ssoh8201@gmail.com", "ann871565@gmail.com", "bmo11152598@gmail.com")로 구글 로그인된 경우 암호 입력 없이 즉시 오픈,
  *   그 외에는 마스터 비밀번호('SantaSungshin2026!' 또는 NEXT_PUBLIC_ADMIN_PIN) 검증
  * - 상단 대시보드:
  *   · Gemini Sign-up 인증 승인 진행률 바 (현재 승인 수 / 목표 570명, %)
