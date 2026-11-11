@@ -145,7 +145,6 @@ export default function RafflePage() {
 
   const isGeminiApproved =
     mySnowball.gemini_verified || mySnowball.gemini_status === "승인";
-  const hasPreviousAllocations = summary.allocatedTickets > 0;
 
   return (
     <AppShell>
@@ -162,7 +161,7 @@ export default function RafflePage() {
           </p>
         </div>
 
-        {/* 내 응모권 N장 (건 X · 남은 Y) 요약 카드 */}
+        {/* 내 응모권 N장 (사용 X장 / 잔여 Y장) 요약 카드 */}
         <div className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md mb-3 text-left">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-semibold text-[#5B7493]">내 응모권</span>
@@ -171,7 +170,7 @@ export default function RafflePage() {
             </span>
           </div>
           <p className="text-[11px] font-medium text-[#5B7493]">
-            건 {summary.allocatedTickets} · 남은 {remainingSelectable}
+            사용 {summary.allocatedTickets}장 / 잔여 {remainingSelectable}장
           </p>
         </div>
 
@@ -241,11 +240,11 @@ export default function RafflePage() {
                   </div>
                 </div>
 
-                {/* 모인 응모권 수(해당 경품 전체 SUM) & 내가 건 응모권 박스 */}
+                {/* 총 응모권(해당 경품 전체 SUM) & 나의 응모권 박스 */}
                 <div className="w-full p-3 rounded-xl bg-[#E6F1FC] space-y-1.5 mb-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-[#5B7493] font-medium">
-                      모인 응모권 수
+                      총 응모권
                     </span>
                     <strong className="font-extrabold text-[#102A4E]">
                       {totalGatheredCount}장
@@ -253,21 +252,18 @@ export default function RafflePage() {
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-[#5B7493] font-medium">
-                      내가 건 응모권
+                      나의 응모권
                     </span>
                     <strong className="font-extrabold text-[#102A4E]">
                       {alreadyPut}장
                     </strong>
                   </div>
-                  <p className="text-[10px] text-[#5B7493] pt-0.5">
-                    많이 걸수록 당첨 확률이 올라가요
-                  </p>
                 </div>
 
-                {/* 하단 수량 조절 (- / 수량 / +) — 스테퍼 라벨 '응모권 걸기' 통일 */}
+                {/* 하단 수량 조절 (- / 수량 / +) — 스테퍼 라벨 '응모하기' 통일 */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-extrabold text-[#102A4E]">
-                    응모권 걸기
+                    응모하기
                   </span>
 
                   <div className="flex items-center gap-1.5">
@@ -294,12 +290,6 @@ export default function RafflePage() {
                     </button>
                   </div>
                 </div>
-
-                {hasPreviousAllocations && (
-                  <p className="mt-2 text-[10px] text-[#7A93B2]">
-                    새로 생긴 응모권은 추가로 걸 수 있어요
-                  </p>
-                )}
               </div>
             );
           })}
@@ -327,7 +317,7 @@ export default function RafflePage() {
           </div>
         </div>
 
-        {/* [응모권 사용하기] 버튼 */}
+        {/* [응모하기] 버튼 */}
         <button
           type="button"
           disabled={draftTotal <= 0 || submitting}
@@ -338,7 +328,7 @@ export default function RafflePage() {
               : "bg-[#5B87B8]/70 text-white/60 cursor-not-allowed"
           }`}
         >
-          응모권 사용하기
+          응모하기
         </button>
       </div>
 

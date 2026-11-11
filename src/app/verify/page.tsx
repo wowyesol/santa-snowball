@@ -295,8 +295,10 @@ export default function VerifyPage() {
           <span
             className={`inline-block px-3 py-0.5 rounded-full text-[11px] font-bold border ${
               isApproved
-                ? "bg-[#3898FF] border-[#66B2FF] text-white"
-                : "bg-white/10 border-white/25 text-sky-100"
+                ? "bg-amber-400/25 border-amber-300 text-amber-200"
+                : isPending
+                ? "bg-[#3898FF]/25 border-[#66B2FF] text-sky-100"
+                : "bg-rose-500/25 border-rose-400 text-rose-100"
             }`}
           >
             {statusBadgeText}
@@ -308,8 +310,10 @@ export default function VerifyPage() {
            ================================================================ */}
         {isApproved ? (
           <div className="space-y-3 text-left">
-            <div className="w-full p-5 rounded-2xl bg-[#52A7FF] text-white shadow-lg">
-              <h2 className="text-lg font-extrabold mb-1.5">승인됐어요!</h2>
+            <div className="w-full p-5 rounded-2xl bg-gradient-to-br from-amber-400/30 via-[#52A7FF] to-[#3898FF] border border-amber-300/80 text-white shadow-lg">
+              <h2 className="text-base font-extrabold mb-1.5 leading-snug break-keep">
+                🎉 제미나이 대학생 플랜 인증이 완료(승인)되었습니다! (+100장 지급 완료)
+              </h2>
               <p className="text-xs text-white/95 leading-relaxed font-medium">
                 응모권 +100 · 사인업 LV +1 반영 완료
                 {existingVerif?.referrer_slug && (
@@ -340,9 +344,9 @@ export default function VerifyPage() {
               상태 2: 심사 중 (S08 · pending)
              ================================================================ */
           <div className="space-y-3 text-left">
-            <div className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md">
-              <h2 className="text-base font-extrabold text-[#102A4E] mb-1">
-                심사 중이에요
+            <div className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md border-l-4 border-[#1E88E5]">
+              <h2 className="text-sm font-extrabold text-[#102A4E] mb-1 leading-snug break-keep">
+                ⏳ 현재 운영진이 영수증을 확인하고 있어요 (인증 대기중)
               </h2>
               <p className="text-[11px] text-[#5B7493] leading-relaxed mb-4">
                 {existingVerif.created_at
@@ -408,18 +412,15 @@ export default function VerifyPage() {
           <form onSubmit={handleSubmit} className="space-y-4 text-left">
             {/* 반려됨 안내 카드 (S08 · rejected) */}
             {isRejected && (
-              <div className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md border-l-4 border-red-500">
-                <h2 className="text-base font-extrabold text-[#102A4E] mb-1">
-                  반려됐어요
+              <div className="w-full p-4 rounded-2xl bg-rose-50 text-[#0B1528] shadow-md border-2 border-red-500">
+                <h2 className="text-sm font-extrabold text-red-700 mb-1.5 leading-snug break-keep">
+                  ⚠️ 이전 인증이 반려되었습니다. 안내 사항을 확인 후 영수증을 다시 제출해 주세요.
                 </h2>
-                <p className="text-xs font-bold text-[#0D2B52] mb-1">
-                  사유:{" "}
-                  {existingVerif?.reject_reason ||
-                    "주문 영수증 캡처에 계정 이메일 또는 주문 날짜가 보이지 않아요"}
-                </p>
-                <p className="text-[11px] text-[#5B7493]">
-                  아래에서 Gemini 대학생 플랜 가입 주문 영수증 캡처 1장을 확인하고 다시 제출할 수 있어요.
-                </p>
+                {existingVerif?.reject_reason && (
+                  <p className="text-xs font-bold text-red-900">
+                    사유: {existingVerif.reject_reason}
+                  </p>
+                )}
               </div>
             )}
 
@@ -556,7 +557,7 @@ export default function VerifyPage() {
               )}
 
               {/* [캡처 예시 보기] 버튼 -> /captureexample.png 팝업 모달 오픈 */}
-              <div className="text-center my-3">
+              <div className="text-center mt-3">
                 <button
                   type="button"
                   onClick={() => setIsExampleModalOpen(true)}
@@ -564,20 +565,6 @@ export default function VerifyPage() {
                 >
                   캡처 예시 보기 · 실제 영수증 화면 확인
                 </button>
-              </div>
-
-              <div className="p-3 rounded-xl bg-[#E6F1FC] flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#1E88E5] text-white text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">
-                  !
-                </span>
-                <div>
-                  <p className="text-[11px] font-extrabold text-[#102A4E]">
-                    로그인 계정 = Gemini 가입 계정
-                  </p>
-                  <p className="text-[10px] text-[#5B7493] leading-relaxed">
-                    주문 영수증 캡처 1장에 구글 이메일과 주문 날짜가 보여야 해요. 주문 영수증은 가입한 메일로 자동 발송됩니다.
-                  </p>
-                </div>
               </div>
             </section>
 

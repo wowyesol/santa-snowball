@@ -213,7 +213,7 @@ export default function AppShell({
         {/* 2) 마감 안내 띠 배너 (#1E88E5) */}
         {!hideDeadlineBanner && (
           <div className="w-full bg-[#1E88E5] text-white text-center py-2 px-3 text-[11px] font-bold tracking-tight shadow-xs">
-            11.27 참여 마감 · 11.30 메시지 공개
+            11.28 당첨자 공개 · 12.1 편지 공개
           </div>
         )}
 

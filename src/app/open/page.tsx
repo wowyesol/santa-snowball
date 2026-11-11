@@ -11,7 +11,7 @@ import {
   Letter,
   getCurrentAuthAndSnowball,
   getVisibleLettersBySnowballId,
-  isCampaignOpenDateReached,
+  isLetterOpenDateReached,
   reportLetter,
   setFlashToast,
 } from "@/lib/supabase";
@@ -20,7 +20,7 @@ import {
  * [S10] 스노우볼 편지 열람 페이지 (/open)
  * - 접근 보호:
  *   1) 비로그인 또는 내 스노우볼이 없는 경우 -> /login으로 이동
- *   2) 11월 30일 메시지 공개일 이전 접속 시 -> 안내 문구(토스트)와 함께 내 스노우볼 홈(S04)으로 이동!
+ *   2) 12월 1일 편지 공개일 이전 접속 시 -> 안내 문구(토스트)와 함께 내 스노우볼 홈(S04)으로 이동!
  * - 공개일 이후: 받은 편지 카드 리스트 표시 및 클릭 시 크리스마스 편지지 상세 읽기 모달 오픈
  */
 function OpenSnowballContent() {
@@ -48,9 +48,9 @@ function OpenSnowballContent() {
         return;
       }
 
-      // 2) 11월 30일 메시지 공개일 이전 접속 시 안내 문구와 함께 내 스노우볼(S04)로 이동
-      if (!isCampaignOpenDateReached()) {
-        setFlashToast("받은 편지는 11월 30일 메시지 공개일에 열람할 수 있어요!");
+      // 2) 12월 1일 편지 공개일 이전 접속 시 안내 문구와 함께 내 스노우볼(S04)로 이동
+      if (!isLetterOpenDateReached()) {
+        setFlashToast("받은 편지는 12월 1일 편지 공개일에 열람할 수 있어요!");
         router.replace(`/snowball/${encodeURIComponent(mySb.slug)}`);
         return;
       }

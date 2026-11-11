@@ -7,7 +7,7 @@ import AppShell from "@/components/AppShell";
 import {
   Snowball,
   getCurrentAuthAndSnowball,
-  isCampaignOpenDateReached,
+  isResultOpenDateReached,
   setFlashToast,
 } from "@/lib/supabase";
 
@@ -17,7 +17,7 @@ type ResultState = "win-top" | "win-other" | "lose";
  * [S11] 당첨 발표 페이지 콘텐츠 컴포넌트(Component)
  * - 접근 보호:
  *   1) 비로그인 또는 스노우볼이 없는 유저가 임의로 접근 시 -> /login으로 이동
- *   2) 11월 30일 당첨 발표일 이전 접속 시 -> 안내 문구와 함께 내 스노우볼 홈(S04)으로 이동!
+ *   2) 11월 28일 당첨 발표일 이전 접속 시 -> 안내 문구와 함께 내 스노우볼 홈(S04)으로 이동!
  */
 function ResultPageContent() {
   const router = useRouter();
@@ -46,9 +46,9 @@ function ResultPageContent() {
       return;
     }
 
-    // 2) 11월 30일 당첨 발표일 이전 접속 시 안내 문구와 함께 내 스노우볼(S04)로 이동
-    if (!isCampaignOpenDateReached()) {
-      setFlashToast("당첨 결과는 11월 30일 발표일에 공개됩니다!");
+    // 2) 11월 28일 당첨 발표일 이전 접속 시 안내 문구와 함께 내 스노우볼(S04)로 이동
+    if (!isResultOpenDateReached()) {
+      setFlashToast("당첨 결과는 11월 28일 발표일에 공개됩니다!");
       router.replace(`/snowball/${encodeURIComponent(mySb.slug)}`);
       return;
     }

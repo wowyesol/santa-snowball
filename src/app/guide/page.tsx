@@ -16,7 +16,7 @@ const FAQ_LIST: FaqItem[] = [
   },
   {
     q: "Q. 편지는 언제 열리나요?",
-    a: "11월 27일 참여 마감 전까지는 누가 보냈는지만 확인하고 편지 내용은 비밀로 보관됩니다. 11월 30일 스노우볼 오픈일에 스노우볼을 흔들면 친구들이 보낸 편지 전문(최대 200자)을 모두 열어볼 수 있어요!",
+    a: "편지 공개일 전까지는 누가 보냈는지만 확인하고 편지 내용은 비밀로 보관됩니다. 12월 1일 편지 공개일에 우편함을 열어보면 친구들이 보낸 편지 전문(최대 200자)을 모두 열어볼 수 있어요!",
   },
   {
     q: "Q. 응모권을 여러 상품에 나눠 걸 수 있나요?",
@@ -71,7 +71,7 @@ export default function GuidePage() {
               </li>
               <li>
                 <strong className="font-extrabold text-slate-900">4.</strong>{" "}
-                11/30에 받은 편지를 열어보고 당첨 결과를 확인해요.
+                11/28에 당첨 결과를 확인하고, 12/1에 받은 편지를 열어봐요.
               </li>
             </ol>
           </div>
@@ -252,14 +252,12 @@ export default function GuidePage() {
                 <span className="font-extrabold text-slate-900">11/9 ~ 11/27</span>
               </div>
               <div className="flex items-center justify-between py-2">
-                <span className="font-semibold text-slate-600">집계 및 검수</span>
-                <span className="font-extrabold text-slate-900">11/28 ~ 11/29</span>
+                <span className="font-semibold text-slate-600">당첨자 공개</span>
+                <span className="font-extrabold text-blue-700">11/28</span>
               </div>
               <div className="flex items-center justify-between py-2">
-                <span className="font-semibold text-slate-600">
-                  스노우볼 오픈 · 당첨 발표
-                </span>
-                <span className="font-extrabold text-blue-700">11/30</span>
+                <span className="font-semibold text-slate-600">편지 공개</span>
+                <span className="font-extrabold text-blue-700">12/1</span>
               </div>
             </div>
           </div>

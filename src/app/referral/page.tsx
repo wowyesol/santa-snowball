@@ -130,7 +130,7 @@ export default function ReferralPage() {
             추천 현황
           </h1>
           <p className="text-xs text-sky-100/90 leading-relaxed break-keep">
-            친구가 Gemini 가입 인증에서 나를 추천인으로 입력하면 응모권 +50장!
+            친구가 Gemini 가입하면 나도 응모권 50장!
           </p>
         </div>
 
@@ -199,34 +199,31 @@ export default function ReferralPage() {
           </div>
 
           <p className="text-[10px] text-[#5B7493]">
-            내 Gemini 가입 승인 +1 · 추천 친구 승인 1명당 +1
+            Gemini 가입 시 +1 · 추천 친구 Gemini 가입 시 +1
           </p>
         </section>
 
-        {/* 3. 업그레이드 단계 미리보기 카드 (LV1 파랑 / LV3 빨강 / LV10 황금) */}
+        {/* 3. 업그레이드 미리보기 카드 (Lv.1 / Lv.3 / Lv.10) */}
         <section className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md mb-5 text-left">
           <h2 className="text-xs font-extrabold text-[#102A4E] mb-3">
-            업그레이드 단계 미리보기
+            업그레이드 미리보기
           </h2>
 
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
               {
                 img: "/lv1_snowball.png",
-                title: "LV1 · 사인업 1명",
-                sub: "파란색 받침대",
+                title: "Lv.1",
                 reached: levelInfo.rawLevel >= 1,
               },
               {
                 img: "/lv3_Snowball.png",
-                title: "LV3 · 사인업 3명",
-                sub: "빨간색 받침대",
+                title: "Lv.3",
                 reached: levelInfo.rawLevel >= 3,
               },
               {
                 img: "/lv10_snowball.png",
-                title: "LV10 · 사인업 10명",
-                sub: "황금색 받침대",
+                title: "Lv.10",
                 reached: levelInfo.rawLevel >= 10,
               },
             ].map((item) => (
@@ -245,21 +242,18 @@ export default function ReferralPage() {
                     className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
                   />
                 </div>
-                <span className="text-[10px] font-extrabold text-[#102A4E] leading-tight break-keep">
+                <span className="text-xs font-extrabold text-[#102A4E] leading-tight break-keep">
                   {item.title}
-                </span>
-                <span className="text-[9px] text-[#5B7493] mt-0.5 break-keep">
-                  {item.sub}
                 </span>
               </div>
             ))}
           </div>
         </section>
 
-        {/* 4. 나를 추천인으로 입력한 친구 목록 */}
+        {/* 4. 내 추천 친구 목록 */}
         <section className="w-full text-left mb-5">
           <h2 className="text-xs font-extrabold text-white mb-2.5">
-            나를 추천인으로 입력한 친구 {referrals.length}명
+            내 추천 친구 {referrals.length}명
           </h2>
 
           {referrals.length === 0 ? (

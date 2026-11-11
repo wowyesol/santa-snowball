@@ -232,17 +232,34 @@ export interface TicketSummary {
 }
 
 /* ============================================================================
- * 2. 운영 일정(11.30 메시지 공개 / 당첨 발표) 및 브라우저 스토리지 헬퍼
+ * 2. 운영 일정(11.28 당첨자 공개 / 12.1 편지 공개) 및 브라우저 스토리지 헬퍼
  * ========================================================================== */
 
 /**
- * 11월 30일 메시지 공개 및 당첨 발표 오픈 여부 확인 함수 (한국 표준시 KST 기준)
- * 공개일(11월 30일 00:00 KST) 이전에는 편지 원문 열람(/open) 및 당첨 발표(/result) 접근을 차단합니다.
+ * 12월 1일 편지 공개일 오픈 여부 확인 함수 (한국 표준시 KST 기준: 2026-12-01T00:00:00+09:00)
+ * 편지 공개일 이전에는 편지 원문 열람(/open 및 P04 원문)을 차단합니다.
+ */
+export function isLetterOpenDateReached(): boolean {
+  const now = new Date();
+  const openDate = new Date("2026-12-01T00:00:00+09:00");
+  return now.getTime() >= openDate.getTime();
+}
+
+/**
+ * 11월 28일 당첨자 공개일 오픈 여부 확인 함수 (한국 표준시 KST 기준: 2026-11-28T00:00:00+09:00)
+ * 발표일 이전에는 당첨 발표(/result) 접근을 차단합니다.
+ */
+export function isResultOpenDateReached(): boolean {
+  const now = new Date();
+  const resultDate = new Date("2026-11-28T00:00:00+09:00");
+  return now.getTime() >= resultDate.getTime();
+}
+
+/**
+ * 기존 호환용 캠페인 편지 오픈일 확인 함수 (12월 1일 00:00 KST 기준)
  */
 export function isCampaignOpenDateReached(): boolean {
-  const now = new Date();
-  const openDate = new Date("2026-11-30T00:00:00+09:00");
-  return now.getTime() >= openDate.getTime();
+  return isLetterOpenDateReached();
 }
 
 const PENDING_INVITE_STORAGE_KEY = "pending_friend_slug";
