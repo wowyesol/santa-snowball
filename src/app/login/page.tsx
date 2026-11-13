@@ -401,9 +401,9 @@ function LoginS02Content() {
           </p>
         </section>
 
-        {/* 3. 닉네임 (2~8자 제한, 추천인 입력칸 없음, 실시간 중복 확인) */}
-        <section className="w-full mb-5">
-          <label className="block text-xs font-bold text-white mb-2">
+        {/* 3. 닉네임 (하단 눈밭 위에서도 선명하게 보이도록 화이트 카드 & #2C2F63 대비 적용) */}
+        <section className="w-full rounded-2xl bg-[#F4F9FF] border border-[#2C2F63]/15 text-[#2C2F63] p-4 mb-5 shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
+          <label className="block text-xs font-extrabold text-[#2C2F63] mb-2">
             3. 닉네임
           </label>
           <input
@@ -412,37 +412,37 @@ function LoginS02Content() {
             onChange={(e) => setNickname(e.target.value.slice(0, 8))}
             maxLength={8}
             placeholder="닉네임 입력 (2~8자)"
-            className="w-full px-4 py-3.5 rounded-xl bg-white text-sm font-bold text-[#0B1528] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3898FF] shadow-md"
+            className="w-full px-4 py-3.5 rounded-xl bg-white border border-[#2C2F63]/20 text-sm font-bold text-[#2C2F63] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2C2F63] shadow-2xs"
           />
 
           {/* 실시간 중복 확인 상태 문구 */}
           {nickStatus === "duplicate" ? (
-            <p className="mt-2 text-xs font-extrabold text-white">
+            <p className="mt-2 text-xs font-extrabold text-rose-600">
               ! 이미 사용 중인 닉네임이에요
             </p>
           ) : nickStatus === "invalid" ? (
-            <p className="mt-2 text-xs font-semibold text-amber-200">
+            <p className="mt-2 text-xs font-bold text-amber-700">
               닉네임은 2~8자로 입력해 주세요
             </p>
           ) : nickStatus === "available" ? (
-            <p className="mt-2 text-[11px] font-semibold text-sky-200">
+            <p className="mt-2 text-[11px] font-extrabold text-emerald-700">
               ✓ 사용 가능한 닉네임이에요 ({nickname.trim().length}/8자)
             </p>
           ) : (
-            <p className="mt-2 text-[11px] text-sky-200/80">
+            <p className="mt-2 text-[11px] font-semibold text-[#2C2F63]/75">
               트리 · 편지 · 보낸 사람 표시에 쓰여요 · 2~8자
             </p>
           )}
         </section>
 
-        {/* 하단 스노우볼 만들기 제출 버튼 */}
+        {/* 하단 스노우볼 만들기 제출 버튼 (#2C2F63 남색 통일) */}
         <button
           type="submit"
           disabled={!isFormValid}
           className={`w-full py-3.5 rounded-xl text-sm font-extrabold transition-all shadow-lg ${
             isFormValid
-              ? "bg-[#3898FF] hover:bg-[#2589F5] text-white cursor-pointer"
-              : "bg-[#5B87B8]/70 text-white/60 cursor-not-allowed"
+              ? "bg-[#2C2F63] hover:bg-[#222552] text-white cursor-pointer"
+              : "bg-[#2C2F63]/45 text-white/80 cursor-not-allowed"
           }`}
         >
           {submitting ? "스노우볼 만드는 중..." : "스노우볼 만들기"}

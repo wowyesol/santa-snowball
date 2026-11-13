@@ -157,17 +157,17 @@ export default function LandingView() {
         {isFriendInvite && friendSnowball && (
           <section
             aria-label="친구 초대 배너"
-            className="w-full mb-6 p-4 rounded-2xl bg-[#EBF4FF] text-[#0B1528] shadow-md text-left break-keep"
+            className="w-full mb-6 p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(26,30,67,0.18)] text-left break-keep"
           >
             <div className="flex items-center gap-2.5 mb-1.5">
-              <div className="w-7 h-7 rounded-full bg-[#C7DDF7] flex items-center justify-center text-sm shrink-0">
+              <div className="w-7 h-7 rounded-full bg-[#E8ECFA] flex items-center justify-center text-sm shrink-0">
                 ⛄
               </div>
-              <p className="text-[13px] font-extrabold text-[#102A4E] leading-snug break-keep">
+              <p className="text-[13px] font-extrabold text-[#2C2F63] leading-snug break-keep">
                 {friendSnowball.nickname}님이 스노우볼에 초대했어요
               </p>
             </div>
-            <p className="text-xs text-[#5B7493] pl-0.5 leading-relaxed break-keep">
+            <p className="text-xs text-[#2C2F63]/80 pl-0.5 leading-relaxed break-keep">
               로그인하면 {friendSnowball.nickname}의 스노우볼에 편지를 넣을 수 있어요
             </p>
           </section>
@@ -181,39 +181,39 @@ export default function LandingView() {
             alt="차곡차곡 크리스마스"
             className="h-9 w-auto object-contain mb-2"
           />
-          <p className="text-sm font-medium text-sky-100/90">
+          <p className="text-sm font-medium text-[#FAF0DC]/95">
             산타보다 빠른 우편함
           </p>
         </div>
 
-        {/* 중앙 스노우볼 이미지 (친구 초대 시 친구의 현재 레벨 0/1/3/10 스노우볼 미리보기, 일반 진입 시 기본 대표 스노우볼) */}
+        {/* 중앙 스노우볼 이미지 (친구 초대 시 친구의 현재 레벨 0/1/3 스노우볼 미리보기, 일반 진입 시 기본 대표 스노우볼) */}
         <SnowballGraphic
           level={isFriendInvite && friendSnowball ? friendSnowball.level : 3}
           overrideImageSrc={
-            isFriendInvite && friendSnowball ? undefined : "/lv3_Snowball.png"
+            isFriendInvite && friendSnowball ? undefined : "/lv3_snowball.png"
           }
           size="lg"
         />
 
         {/* 하단 로그인 시작하기 버튼 */}
         <div className="w-full mt-3">
-          <p className="text-xs font-semibold text-sky-100 mb-3">
+          <p className="text-xs font-extrabold text-[#2C2F63] bg-white/85 border border-[#2C2F63]/15 rounded-full py-1.5 px-4 inline-block shadow-2xs mb-3">
             크리스마스의 설렘을 담아, 친구에게 편지를 남겨보세요
           </p>
 
           <button
             type="button"
             onClick={handleGoToS02}
-            className="w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] active:scale-[0.99] text-white text-sm font-extrabold shadow-lg transition-all"
+            className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] active:scale-[0.99] text-white text-sm font-extrabold border border-white/15 shadow-[0_6px_16px_rgba(44,47,99,0.3)] transition-all"
           >
             로그인하고 시작하기
           </button>
         </div>
 
-        {/* 경품 안내 반투명 화이트 그라데이션 박스 */}
-        <section className="w-full mt-5 p-4 rounded-2xl bg-gradient-to-b from-white/95 to-[#CFE4FA]/90 text-[#0B1528] shadow-md">
-          <h2 className="text-xs font-extrabold text-[#102A4E] mb-1">경품</h2>
-          <p className="text-[11px] font-semibold text-[#4A6583] leading-relaxed">
+        {/* 경품 안내 박스 (하단 눈밭 위 선명한 대비 확보) */}
+        <section className="w-full mt-4 p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
+          <h2 className="text-xs font-extrabold text-[#2C2F63] mb-1">경품</h2>
+          <p className="text-[11px] font-bold text-[#2C2F63]/80 leading-relaxed">
             무신사 20만 원 · 신세계 10만 원 · 배민 3만 원
             <br />
             행운의 선물 - 투썸 1만 원 (총 23명)

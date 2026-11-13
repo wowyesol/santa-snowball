@@ -310,23 +310,23 @@ function SnowballDetailContent() {
             <button
               type="button"
               onClick={handleShakeSnowball}
-              className="mt-2 w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] active:scale-[0.99] text-white text-sm font-extrabold shadow-md transition-all mb-4"
+              className="mt-2 w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] active:scale-[0.99] text-white text-sm font-extrabold border border-white/15 shadow-[0_6px_16px_rgba(44,47,99,0.28)] transition-all mb-4"
             >
               우편함 열어보기
             </button>
 
-            {/* 내 스노우볼 공유 유도 유리 카드 (단일 [스노우볼 공유하기] 버튼) */}
-            <div className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] text-left mb-3 shadow-md">
-              <h2 className="text-xs font-extrabold text-[#102A4E] mb-1">
+            {/* 내 스노우볼 공유 유도 카드 (단일 [스노우볼 공유하기] 버튼) */}
+            <div className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] text-left mb-3 shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
+              <h2 className="text-xs font-extrabold text-[#2C2F63] mb-1">
                 친구와 편지를 나눠봐요!
               </h2>
-              <p className="text-[11px] text-[#5B7493] mb-3">
+              <p className="text-[11px] font-semibold text-[#2C2F63]/75 mb-3">
                 친구들이 내 스노우볼에 편지를 남기면 응모권이 쌓여요
               </p>
               <button
                 type="button"
                 onClick={handleCopyMyLink}
-                className="w-full py-3 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] text-white text-xs font-extrabold transition-colors"
+                className="w-full py-3 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-xs font-extrabold transition-colors shadow-xs"
               >
                 스노우볼 공유하기
               </button>
@@ -335,16 +335,16 @@ function SnowballDetailContent() {
             {/* 하단 액션 영역 */}
             <div className="w-full space-y-2.5">
               {/* 1) 내 응모권 N장 (사용 X장 / 잔여 Y장) 요약 카드 */}
-              <div className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md">
+              <div className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-[#5B7493]">
+                  <span className="text-xs font-bold text-[#2C2F63]/80">
                     내 응모권
                   </span>
-                  <span className="text-xl font-black text-[#102A4E]">
+                  <span className="text-xl font-black text-[#2C2F63]">
                     {ticketSummary?.totalTickets ?? targetSnowball.ticket_count}장
                   </span>
                 </div>
-                <p className="text-[11px] font-medium text-[#5B7493] text-left">
+                <p className="text-[11px] font-semibold text-[#2C2F63]/75 text-left">
                   사용 {ticketSummary?.allocatedTickets ?? 0}장 / 잔여{" "}
                   {ticketSummary?.availableTickets ?? targetSnowball.ticket_count}장
                 </p>
@@ -358,19 +358,19 @@ function SnowballDetailContent() {
                 />
               )}
 
-              {/* 3) [응모하러 가기] 하늘색 버튼 (S06 이동) */}
+              {/* 3) [응모하러 가기] 남색(#2C2F63) 버튼 (S06 이동) */}
               <Link
                 href="/raffle"
-                className="block w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] text-white text-sm font-extrabold text-center shadow-md transition-colors"
+                className="block w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold text-center shadow-[0_6px_16px_rgba(44,47,99,0.28)] transition-colors"
               >
                 응모하러 가기
               </Link>
 
-              {/* 4) 추천 현황 보기 -> 링크 (S07 이동) */}
+              {/* 4) 추천 현황 보기 -> 하단 눈밭(#FAF0DC) 위에서도 선명한 남색(#2C2F63) 링크 */}
               <div className="pt-2 text-center">
                 <Link
                   href="/referral"
-                  className="inline-block py-1.5 text-xs font-bold text-sky-200 hover:text-white transition-colors"
+                  className="inline-block px-4 py-1.5 rounded-full bg-white/85 border border-[#2C2F63]/20 text-xs font-extrabold text-[#2C2F63] hover:bg-white shadow-2xs transition-colors"
                 >
                   추천 현황 보기 →
                 </Link>
@@ -393,7 +393,7 @@ function SnowballDetailContent() {
               </h1>
 
               {isOwnLinkView && (
-                <span className="inline-block px-3 py-0.5 rounded-full bg-[#3898FF] text-white text-[11px] font-bold">
+                <span className="inline-block px-3 py-0.5 rounded-full bg-[#2C2F63] border border-white/20 text-white text-[11px] font-bold">
                   내 스노우볼
                 </span>
               )}
@@ -405,7 +405,7 @@ function SnowballDetailContent() {
               </span>
             </div>
 
-            {/* 친구의 현재 레벨(0/1/3/10)에 맞는 스노우볼 이미지 */}
+            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 */}
             <div className="my-4 flex justify-center">
               <SnowballGraphic
                 level={targetSnowball.level}
@@ -416,11 +416,11 @@ function SnowballDetailContent() {
             {/* 상태 1: 내 스노우볼에 내가 공유 링크로 접속한 경우 (own-link) */}
             {isOwner ? (
               <div className="w-full mt-4 space-y-3 text-left">
-                <div className="p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md">
-                  <p className="text-sm font-extrabold text-[#102A4E] mb-1">
+                <div className="p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
+                  <p className="text-sm font-extrabold text-[#2C2F63] mb-1">
                     내 스노우볼에는 편지를 넣을 수 없어요
                   </p>
-                  <p className="text-xs text-[#5B7493]">
+                  <p className="text-xs font-semibold text-[#2C2F63]/75">
                     친구에게 링크를 보내 편지를 받아보세요
                   </p>
                 </div>
@@ -428,7 +428,7 @@ function SnowballDetailContent() {
                 <button
                   type="button"
                   onClick={handleCopyMyLink}
-                  className="w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] text-white text-sm font-extrabold shadow-md transition-colors"
+                  className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold shadow-md transition-colors"
                 >
                   내 스노우볼 공유하기
                 </button>
@@ -436,7 +436,7 @@ function SnowballDetailContent() {
             ) : justSent ? (
               /* 상태 2: 방금 편지 전송 완료 (S05 · sent) */
               <div className="w-full mt-4 space-y-2.5 text-left">
-                <div className="p-4 rounded-2xl bg-[#52A7FF] text-white shadow-md">
+                <div className="p-4 rounded-2xl bg-[#2C2F63] border border-white/20 text-white shadow-md">
                   <p className="text-base font-extrabold mb-0.5">
                     편지를 넣었어요!
                   </p>
@@ -448,7 +448,7 @@ function SnowballDetailContent() {
                 {mySnowball && (
                   <Link
                     href={`/snowball/${encodeURIComponent(mySnowball.slug)}`}
-                    className="block w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] text-white text-sm font-extrabold text-center shadow-md transition-colors"
+                    className="block w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold text-center shadow-md transition-colors"
                   >
                     내 스노우볼 보러 가기
                   </Link>
@@ -457,7 +457,7 @@ function SnowballDetailContent() {
                 <button
                   type="button"
                   onClick={handleCopyMyLink}
-                  className="w-full py-3.5 rounded-xl bg-white hover:bg-sky-50 text-[#102A4E] text-sm font-extrabold shadow-md transition-colors"
+                  className="w-full py-3.5 rounded-xl bg-white hover:bg-slate-50 border border-[#2C2F63]/20 text-[#2C2F63] text-sm font-extrabold shadow-md transition-colors"
                 >
                   내 스노우볼도 공유하기
                 </button>
@@ -465,11 +465,11 @@ function SnowballDetailContent() {
             ) : myExistingLetter ? (
               /* 상태 3: 이미 이 스노우볼에 편지를 보낸 경우 (S05 · already-sent) */
               <div className="w-full mt-4 space-y-2.5 text-left">
-                <div className="p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md">
-                  <p className="text-sm font-extrabold text-[#102A4E] mb-1">
+                <div className="p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
+                  <p className="text-sm font-extrabold text-[#2C2F63] mb-1">
                     이미 편지를 보냈어요
                   </p>
-                  <p className="text-xs text-[#5B7493]">
+                  <p className="text-xs font-semibold text-[#2C2F63]/75">
                     같은 스노우볼에는 1번만 보낼 수 있어요 ·{" "}
                     {myExistingLetter.created_at
                       ? new Date(myExistingLetter.created_at).toLocaleDateString(
@@ -484,7 +484,7 @@ function SnowballDetailContent() {
                 <button
                   type="button"
                   disabled
-                  className="w-full py-3.5 rounded-xl bg-[#5B87B8]/70 text-white/60 text-sm font-extrabold cursor-not-allowed"
+                  className="w-full py-3.5 rounded-xl bg-[#2C2F63]/45 text-white/85 text-sm font-extrabold cursor-not-allowed"
                 >
                   이미 편지를 보냈어요
                 </button>
@@ -492,29 +492,29 @@ function SnowballDetailContent() {
                 {mySnowball && (
                   <Link
                     href={`/snowball/${encodeURIComponent(mySnowball.slug)}`}
-                    className="block w-full py-3.5 rounded-xl bg-white hover:bg-sky-50 text-[#102A4E] text-sm font-extrabold text-center shadow-md transition-colors"
+                    className="block w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold text-center shadow-md transition-colors"
                   >
                     내 스노우볼 보러 가기
                   </Link>
                 )}
               </div>
             ) : (
-              /* 상태 4: 편지 작성 가능 (S05 · ready, 최소 15자 ~ 최대 200자 제한 & 실시간 카운터) */
+              /* 상태 4: 편지 작성 가능 (하단 눈밭 위에서도 선명하게 보이도록 화이트 카드 & #2C2F63 대비 적용) */
               <form
                 onSubmit={handleSendLetterSubmit}
-                className="w-full mt-3 text-left"
+                className="w-full mt-3 p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 shadow-[0_8px_22px_rgba(44,47,99,0.14)] text-left text-[#2C2F63]"
               >
-                <h2 className="text-sm font-extrabold text-white mb-2">
+                <h2 className="text-sm font-extrabold text-[#2C2F63] mb-2">
                   {targetSnowball.nickname}의 스노우볼에 편지 넣기
                 </h2>
 
                 {letterError && (
-                  <div className="mb-3 p-3 rounded-xl bg-red-500/20 border border-red-300/50 text-xs text-red-100">
+                  <div className="mb-3 p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-700">
                     ⚠️ {letterError}
                   </div>
                 )}
 
-                <label className="block text-[11px] font-semibold text-sky-100 mb-1.5">
+                <label className="block text-[11px] font-bold text-[#2C2F63]/80 mb-1.5">
                   메시지
                 </label>
 
@@ -528,14 +528,14 @@ function SnowballDetailContent() {
                   }
                   placeholder={`${targetSnowball.nickname}아 메리 크리스마스! 시험 끝나면 같이 맛있는 거 먹으러 가자! (최소 15자)`}
                   required
-                  className="w-full p-3.5 rounded-2xl bg-white text-xs font-medium text-[#0B1528] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3898FF] shadow-md resize-none"
+                  className="w-full p-3.5 rounded-2xl bg-[#F8F9FE] border border-[#2C2F63]/20 text-xs font-semibold text-[#2C2F63] placeholder:text-[#2C2F63]/45 focus:outline-none focus:ring-2 focus:ring-[#2C2F63] shadow-inner resize-none"
                 />
 
-                <div className="mt-1.5 mb-3 flex flex-wrap items-center justify-between gap-1 text-[10px] text-sky-200/85 break-keep">
+                <div className="mt-1.5 mb-3 flex flex-wrap items-center justify-between gap-1 text-[10px] font-bold text-[#2C2F63]/75 break-keep">
                   <span className="leading-snug">
                     12월 1일에 {targetSnowball.nickname}가 열어볼 수 있어요 · 보낸 사람 닉네임은 공개돼요
                   </span>
-                  <span className="font-mono font-bold shrink-0">
+                  <span className="font-mono font-extrabold text-[#2C2F63] shrink-0">
                     {letterContent.trim().length} / 200자 (최소 15자)
                   </span>
                 </div>
@@ -543,12 +543,12 @@ function SnowballDetailContent() {
                 <button
                   type="submit"
                   disabled={sendingLetter || letterContent.trim().length < 15}
-                  className="w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] disabled:bg-[#5B87B8]/70 disabled:text-white/60 text-white text-sm font-extrabold shadow-lg transition-all"
+                  className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] disabled:bg-[#2C2F63]/40 disabled:text-white/75 text-white text-sm font-extrabold shadow-md transition-all"
                 >
                   {sendingLetter ? "편지 넣는 중..." : "편지 넣기"}
                 </button>
 
-                <p className="mt-2 text-center text-[11px] text-sky-200/90 font-medium">
+                <p className="mt-2 text-center text-[11px] text-[#2C2F63] font-extrabold">
                   보내면 나도 응모권 +1 · {targetSnowball.nickname}님도 +1
                 </p>
               </form>
@@ -570,11 +570,11 @@ function SnowballDetailContent() {
             onClick={() => setIsP04Open(false)}
           >
             <div
-              className="w-full max-w-[350px] max-h-[85vh] rounded-3xl bg-white text-[#0B1528] p-5 shadow-2xl flex flex-col break-keep"
+              className="w-full max-w-[350px] max-h-[85vh] rounded-3xl bg-white text-[#2C2F63] p-5 shadow-2xl flex flex-col break-keep"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-base font-extrabold text-[#102A4E]">
+                <h2 className="text-base font-extrabold text-[#2C2F63]">
                   받은 편지 {letters.length}개
                 </h2>
                 <button
@@ -589,10 +589,10 @@ function SnowballDetailContent() {
               {letters.length === 0 ? (
                 <div className="py-10 text-center space-y-3">
                   <p className="text-3xl">⛄</p>
-                  <p className="text-sm font-extrabold text-[#102A4E]">
+                  <p className="text-sm font-extrabold text-[#2C2F63]">
                     아직 도착한 편지가 없어요
                   </p>
-                  <p className="text-xs text-[#5B7493]">
+                  <p className="text-xs text-[#2C2F63]/75">
                     내 스노우볼 링크를 공유하고 친구들에게 편지를 받아보세요!
                   </p>
                   <button
@@ -601,14 +601,14 @@ function SnowballDetailContent() {
                       setIsP04Open(false);
                       handleCopyMyLink();
                     }}
-                    className="w-full py-3 rounded-xl bg-[#3898FF] text-white text-xs font-extrabold"
+                    className="w-full py-3 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-xs font-extrabold"
                   >
                     공유 링크 보내기
                   </button>
                 </div>
               ) : (
                 <>
-                  <p className="mb-3 text-left text-xs font-bold text-[#5B7493]">
+                  <p className="mb-3 text-left text-xs font-bold text-[#2C2F63]/80">
                     편지는 12월 1일에 공개 돼요
                   </p>
 
@@ -616,13 +616,13 @@ function SnowballDetailContent() {
                     {letters.map((item) => (
                       <div
                         key={item.id}
-                        className="p-3.5 rounded-2xl bg-[#F8FBFF] border border-[#E2EEFC] text-left"
+                        className="p-3.5 rounded-2xl bg-[#F8F9FE] border border-[#2C2F63]/15 text-left"
                       >
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-extrabold text-[#102A4E]">
+                          <span className="text-xs font-extrabold text-[#2C2F63]">
                             💌 {item.sender_name}
                           </span>
-                          <span className="text-[10px] text-[#7A93B2]">
+                          <span className="text-[10px] font-semibold text-[#2C2F63]/60">
                             {item.created_at
                               ? new Date(item.created_at).toLocaleDateString(
                                   "ko-KR",
@@ -633,7 +633,7 @@ function SnowballDetailContent() {
                         </div>
                         {/* 12월 1일 공개 전까지 편지 원문 스포일러 원천 차단 (고정 마스킹 + 블러 처리) */}
                         <p
-                          className="text-xs text-[#4A6583] leading-relaxed blur-[6px] select-none pointer-events-none"
+                          className="text-xs text-[#2C2F63]/70 leading-relaxed blur-[6px] select-none pointer-events-none"
                           aria-hidden="true"
                         >
                           12월 1일에 공개되는 비밀 크리스마스 메시지입니다. 조금만 기다려 주세요!
@@ -647,7 +647,7 @@ function SnowballDetailContent() {
                       <Link
                         href="/open"
                         onClick={() => setIsP04Open(false)}
-                        className="w-full py-2.5 rounded-xl bg-[#EBF4FF] text-[#1E88E5] text-xs font-extrabold text-center"
+                        className="w-full py-2.5 rounded-xl bg-[#E8ECFA] text-[#2C2F63] text-xs font-extrabold text-center"
                       >
                         편지 전문 열람 화면으로 이동 →
                       </Link>
@@ -655,7 +655,7 @@ function SnowballDetailContent() {
                     <button
                       type="button"
                       onClick={() => setIsP04Open(false)}
-                      className="w-full py-3 rounded-xl bg-[#3898FF] text-white text-xs font-extrabold"
+                      className="w-full py-3 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-xs font-extrabold"
                     >
                       확인
                     </button>

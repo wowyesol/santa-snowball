@@ -15,59 +15,103 @@ interface SnowballGraphicProps {
 interface IdleFlake {
   id: number;
   left: string;
-  sizePx: number;
+  widthPx: number;
+  heightPx: number;
+  borderRadius: string;
   durationSec: number;
   delaySec: number;
-  opacity: number;
   swayPx: number;
+  rotStart: number;
+  rotEnd: number;
 }
 
-interface BurstFlake {
+interface SwirlFlake {
   id: number;
   left: string;
   top: string;
-  sizePx: number;
-  durationSec: number;
-  delaySec: number;
-  swayPx: number;
+  widthPx: number;
+  heightPx: number;
+  borderRadius: string;
+  dx1: number;
+  dy1: number;
+  dx2: number;
+  dy2: number;
+  dx3: number;
+  dy3: number;
+  dx4: number;
+  dy4: number;
+  dxEnd: number;
+  dyEnd: number;
 }
 
-// [1단계: 평상시 기본 상태 (Idle)]
-// 동그란 유리구슬 영역 안에서 2px~4px 크기, 투명도 50~80%의 작은 흰색 눈송이 14개가
-// 6~10초 주기로 천천히 살랑살랑 흔들리며 내려가는 상시 애니메이션 데이터
-const IDLE_FLAKES: IdleFlake[] = Array.from({ length: 14 }, (_, i) => ({
-  id: i,
-  left: `${8 + ((i * 19) % 82)}%`,
-  sizePx: 2 + (i % 3), // 2px ~ 4px
-  durationSec: 6.2 + ((i * 7) % 38) / 10, // 6.2s ~ 9.9s
-  delaySec: -((i * 1.3) % 8.5), // 음수 딜레이로 진입 즉시 자연스럽게 분포
-  opacity: 0.52 + ((i * 5) % 29) / 100, // 0.52 ~ 0.80
-  swayPx: (i % 2 === 0 ? 1 : -1) * (5 + (i % 6)),
-}));
+// 손그림 크레용/조약돌 느낌의 비정형 테두리(border-radius) 패턴 목록
+const PEBBLE_RADII = [
+  "58% 42% 63% 37% / 45% 55% 45% 55%",
+  "44% 56% 39% 61% / 57% 41% 59% 43%",
+  "64% 36% 52% 48% / 42% 62% 38% 58%",
+  "49% 51% 62% 38% / 63% 44% 56% 37%",
+  "37% 63% 55% 45% / 48% 54% 46% 52%",
+  "61% 39% 44% 56% / 53% 38% 62% 47%",
+];
 
-// [2단계: 흔들기 클릭 상태 (Shaking)]
-// 크고 선명한 흰색 동그란 함박눈 입자(4px~9px 크기) 56개가 빠르고 역동적으로 쏟아지며 휘날리는 연출 데이터
-const BURST_FLAKES: BurstFlake[] = Array.from({ length: 56 }, (_, i) => ({
-  id: i,
-  left: `${4 + ((i * 17) % 90)}%`,
-  top: `${-12 + ((i * 13) % 35)}%`,
-  sizePx: 4 + (i % 6), // 4px ~ 9px
-  durationSec: 0.85 + ((i * 11) % 85) / 100, // 0.85s ~ 1.69s
-  delaySec: -((i * 0.19) % 1.1),
-  swayPx: (i % 2 === 0 ? 1 : -1) * (12 + (i % 15)),
-}));
+// [1단계: 평상시 기본 상태 (Idle)]
+// 빛 번짐(glow)이나 투명도 변화 없이 100% 불투명한 순백색(#FFFFFF) 작은 크레용 눈송이 조각(3.5~5.5px)이
+// 유리구슬 안에서 잔잔하고 포근하게 살랑거리며 내려오는 데이터
+const IDLE_FLAKES: IdleFlake[] = Array.from({ length: 18 }, (_, i) => {
+  const baseW = 3.5 + (i % 3) * 0.9; // 3.5px ~ 5.3px
+  const baseH = 3.2 + ((i + 1) % 3) * 0.85; // 살짝 비대칭 조약돌 비율
+  return {
+    id: i,
+    left: `${9 + ((i * 17) % 80)}%`,
+    widthPx: Number(baseW.toFixed(1)),
+    heightPx: Number(baseH.toFixed(1)),
+    borderRadius: PEBBLE_RADII[i % PEBBLE_RADII.length],
+    durationSec: 5.8 + ((i * 7) % 36) / 10, // 5.8s ~ 9.3s
+    delaySec: -((i * 1.15) % 8.2), // 진입 즉시 구슬 전체에 고르게 분포
+    swayPx: (i % 2 === 0 ? 1 : -1) * (5 + (i % 6)),
+    rotStart: (i * 23) % 90 - 45,
+    rotEnd: ((i * 23) % 90 - 45) + (i % 2 === 0 ? 40 : -40),
+  };
+});
+
+// [2단계: 흔들었을 때 (Shake)]
+// 평소의 작은 불투명 눈송이 크기(3.5~5.3px)와 조약돌 모양을 그대로 유지한 채,
+// 개수가 풍성해지며 상하좌우·대각선으로 자유롭게 소용돌이치듯 흩날리다가 서서히 가라앉는 데이터
+const SWIRL_FLAKES: SwirlFlake[] = Array.from({ length: 40 }, (_, i) => {
+  const baseW = 3.5 + (i % 3) * 0.9;
+  const baseH = 3.2 + ((i + 2) % 3) * 0.85;
+  const dirX = i % 2 === 0 ? 1 : -1;
+  const dirY = i % 3 === 0 ? -1 : 1;
+  return {
+    id: i,
+    left: `${12 + ((i * 19) % 76)}%`,
+    top: `${12 + ((i * 23) % 68)}%`,
+    widthPx: Number(baseW.toFixed(1)),
+    heightPx: Number(baseH.toFixed(1)),
+    borderRadius: PEBBLE_RADII[(i + 2) % PEBBLE_RADII.length],
+    dx1: dirX * (22 + ((i * 11) % 32)),
+    dy1: -1 * (18 + ((i * 13) % 34)), // 흔드는 순간 위로 솟구치며 확산
+    dx2: -dirX * (20 + ((i * 17) % 36)),
+    dy2: dirY * (16 + ((i * 7) % 28)),
+    dx3: dirX * (16 + ((i * 13) % 28)),
+    dy3: -dirY * (14 + ((i * 9) % 24)),
+    dx4: -dirX * (10 + ((i * 7) % 18)),
+    dy4: 12 + (i % 16),
+    dxEnd: dirX * (4 + (i % 8)),
+    dyEnd: 36 + ((i * 5) % 28), // 마지막에 잔잔하게 아래로 가라앉음
+  };
+});
 
 /**
  * 스노우볼 중앙 그래픽 컴포넌트 (S01, S04, S05, S10 공통 적용)
- * - public/ 폴더에 저장된 실제 스노우볼 PNG 이미지를 레벨(LV 0 -> 1 -> 3 -> 10)에 맞춰 렌더링
- * - 상단 동그란 유리구슬 영역에만 정확히 겹치는 원형 마스크 레이어
- *   (`absolute top-[2%] left-[8%] w-[84%] aspect-square rounded-full overflow-hidden pointer-events-none`)를 통해
- *   1단계(평상시 잔잔한 눈) ↔ 2단계(흔들기 시 함박눈 폭풍) 연출을 수행합니다.
+ * - public/ 폴더에 저장된 새 크레용 동화 스노우볼 일러스트(lv0, lv1, lv3)를 렌더링합니다.
+ * - 선물 상자 아이콘 중첩 표시를 완전히 제거하여 일러스트 본연의 감성을 깔끔하게 유지합니다.
+ * - 유리구슬 내부 원형 마스크 영역 안에서 100% 불투명(#FFFFFF) 비정형 조약돌 모양 눈송이가
+ *   평소에는 잔잔하게 내리고, 흔들었을 때는 같은 크기의 작은 눈송이들이 사방으로 휘날리다 가라앉습니다.
  */
 export default function SnowballGraphic({
   level = 0,
   overrideImageSrc,
-  letters = [],
   isShaking = false,
   showShakeBadge = false,
   size = "lg",
@@ -75,16 +119,12 @@ export default function SnowballGraphic({
   const levelInfo = getSnowballLevelInfo(level);
   const imgSrc = overrideImageSrc || levelInfo.imageSrc;
 
-  // 받은 편지 최대 30개까지 미니 선물 점 표시, 30개 초과 시 +N 뱃지
-  const visibleGiftCount = Math.min(letters.length, 30);
-  const overflowCount = Math.max(0, letters.length - 30);
-
-  const widthClass = size === "lg" ? "w-[248px]" : "w-[190px]";
+  const widthClass = size === "lg" ? "w-[254px]" : "w-[196px]";
 
   return (
     <div className="relative flex flex-col items-center justify-center my-2 select-none">
       {showShakeBadge && (
-        <div className="mb-1.5 px-3 py-0.5 rounded-full bg-[#3898FF] text-white text-[10px] font-bold shadow-sm">
+        <div className="mb-1.5 px-3 py-0.5 rounded-full bg-[#2C2F63] border border-white/25 text-white text-[10px] font-extrabold shadow-sm">
           흔들림 모션
         </div>
       )}
@@ -94,12 +134,12 @@ export default function SnowballGraphic({
           isShaking ? "animate-snowball-shake" : "transition-transform duration-300"
         }`}
       >
-        {/* 실제 스노우볼 이미지 */}
+        {/* 실제 스노우볼 일러스트 이미지 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imgSrc}
           alt={levelInfo.tierLabel}
-          className="w-full h-auto object-contain drop-shadow-[0_14px_28px_rgba(0,0,0,0.4)]"
+          className="w-full h-auto object-contain drop-shadow-[0_12px_24px_rgba(26,30,67,0.35)]"
         />
 
         {/* ================================================================
@@ -107,10 +147,10 @@ export default function SnowballGraphic({
             하단 우체통 받침대(POST) 밖으로는 눈이 절대 삐져나가지 않도록 마스킹
            ================================================================ */}
         <div
-          className="absolute top-[2%] left-[8%] w-[84%] aspect-square rounded-full overflow-hidden pointer-events-none z-10"
+          className="absolute top-[4%] left-[11%] w-[78%] aspect-square rounded-full overflow-hidden pointer-events-none z-10"
           aria-hidden="true"
         >
-          {/* 1단계: 평상시(Idle) 상시 살랑살랑 내리는 잔잔한 눈송이 (14개, 2~4px, 6~10초) */}
+          {/* 1단계: 평상시(Idle) 상시 살랑살랑 내리는 100% 불투명 손그림 눈송이 조각 */}
           {IDLE_FLAKES.map((flake) => (
             <span
               key={`idle-${flake.id}`}
@@ -118,55 +158,51 @@ export default function SnowballGraphic({
                 {
                   left: flake.left,
                   top: "-6%",
-                  width: `${flake.sizePx}px`,
-                  height: `${flake.sizePx}px`,
-                  "--snow-opacity": flake.opacity,
+                  width: `${flake.widthPx}px`,
+                  height: `${flake.heightPx}px`,
+                  borderRadius: flake.borderRadius,
+                  backgroundColor: "#FFFFFF",
                   "--snow-sway": `${flake.swayPx}px`,
-                  animation: `snowballIdleFall ${flake.durationSec}s ease-in-out ${flake.delaySec}s infinite`,
+                  "--snow-rot-start": `${flake.rotStart}deg`,
+                  "--snow-rot-end": `${flake.rotEnd}deg`,
+                  animation: `snowballIdleFall ${flake.durationSec}s linear ${flake.delaySec}s infinite`,
                 } as React.CSSProperties
               }
-              className="absolute rounded-full bg-white shadow-[0_0_4px_rgba(255,255,255,0.8)]"
+              className="absolute block"
             />
           ))}
 
-          {/* 2단계: 흔들기 클릭 상태(isShaking)일 때 펑펑 쏟아지는 함박눈 입자 (56개, 4~9px) */}
+          {/* 2단계: 흔들기 클릭 상태(isShaking)일 때 동일한 작은 불투명 눈송이들이 사방으로 휘날리다 가라앉음 */}
           {isShaking &&
-            BURST_FLAKES.map((flake) => (
+            SWIRL_FLAKES.map((flake) => (
               <span
-                key={`burst-${flake.id}`}
+                key={`swirl-${flake.id}`}
                 style={
                   {
                     left: flake.left,
                     top: flake.top,
-                    width: `${flake.sizePx}px`,
-                    height: `${flake.sizePx}px`,
-                    "--snow-sway": `${flake.swayPx}px`,
-                    animation: `snowballBurstFall ${flake.durationSec}s ease-in-out ${flake.delaySec}s infinite`,
+                    width: `${flake.widthPx}px`,
+                    height: `${flake.heightPx}px`,
+                    borderRadius: flake.borderRadius,
+                    backgroundColor: "#FFFFFF",
+                    "--dx1": `${flake.dx1}px`,
+                    "--dy1": `${flake.dy1}px`,
+                    "--dx2": `${flake.dx2}px`,
+                    "--dy2": `${flake.dy2}px`,
+                    "--dx3": `${flake.dx3}px`,
+                    "--dy3": `${flake.dy3}px`,
+                    "--dx4": `${flake.dx4}px`,
+                    "--dy4": `${flake.dy4}px`,
+                    "--dx-end": `${flake.dxEnd}px`,
+                    "--dy-end": `${flake.dyEnd}px`,
+                    animation:
+                      "snowballShakeSwirl 1.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards",
                   } as React.CSSProperties
                 }
-                className="absolute rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.95)]"
+                className="absolute block"
               />
             ))}
         </div>
-
-        {/* 받은 편지가 있을 때 트리 하단 눈밭에 작은 선물 상자 아이콘 중첩 표시 */}
-        {visibleGiftCount > 0 && (
-          <div className="absolute bottom-[33%] inset-x-[18%] flex flex-wrap items-center justify-center gap-1 pointer-events-none z-20">
-            {Array.from({ length: Math.min(visibleGiftCount, 8) }).map((_, i) => (
-              <span
-                key={i}
-                className="w-4 h-4 rounded-[3px] bg-amber-300/95 border border-red-500 text-[9px] flex items-center justify-center shadow-xs"
-              >
-                🎁
-              </span>
-            ))}
-            {(visibleGiftCount > 8 || overflowCount > 0) && (
-              <span className="px-1.5 py-0.5 rounded-full bg-[#0B1528]/85 border border-white/40 text-white text-[9px] font-extrabold">
-                +{letters.length - Math.min(visibleGiftCount, 8)}
-              </span>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

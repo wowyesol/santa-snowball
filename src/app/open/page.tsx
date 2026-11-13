@@ -148,29 +148,29 @@ function OpenSnowballContent() {
         <button
           type="button"
           onClick={handleShakeAgain}
-          className="mt-2 mb-6 rounded-full border border-white/30 bg-white/95 px-6 py-2.5 text-xs font-extrabold text-slate-900 shadow-md transition hover:bg-white active:scale-[0.98]"
+          className="mt-2 mb-6 rounded-full border border-white/25 bg-[#2C2F63] hover:bg-[#222552] px-6 py-2.5 text-xs font-extrabold text-white shadow-md transition active:scale-[0.98]"
         >
           다시 흔들기
         </button>
 
         {/* 받은 메시지 목록 섹션 */}
         <div className="w-full">
-          <div className="mb-2.5 flex items-center justify-between px-1">
-            <h2 className="text-sm font-extrabold text-white">
+          <div className="mb-2.5 flex items-center justify-between px-3 py-1.5 rounded-full bg-[#2C2F63]/90 text-white shadow-xs">
+            <h2 className="text-xs font-extrabold text-white">
               받은 메시지 ({letters.length}개)
             </h2>
-            <span className="text-[11px] font-medium text-blue-200/80">
+            <span className="text-[11px] font-medium text-[#FAF0DC]/90">
               카드를 눌러 편지 전문 읽기
             </span>
           </div>
 
           {letters.length === 0 ? (
             /* 받은 편지가 0개일 때의 빈 상태(Empty State) */
-            <div className="rounded-2xl bg-white/95 p-8 text-center text-slate-800 shadow-lg">
-              <p className="text-base font-extrabold text-slate-800">
+            <div className="rounded-2xl border border-[#2C2F63]/15 bg-white/95 p-8 text-center text-[#2C2F63] shadow-lg">
+              <p className="text-base font-extrabold text-[#2C2F63]">
                 받은 편지가 없어요
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs font-semibold text-[#2C2F63]/70">
                 따뜻한 연말 보내세요!
               </p>
             </div>
@@ -187,12 +187,12 @@ function OpenSnowballContent() {
                       setSelectedLetter(letter);
                     }
                   }}
-                  className="group cursor-pointer rounded-2xl border border-white/80 bg-white/95 p-4 text-left text-slate-900 shadow-md transition hover:-translate-y-0.5 hover:bg-white active:scale-[0.99]"
+                  className="group cursor-pointer rounded-2xl border border-[#2C2F63]/15 bg-white/95 p-4 text-left text-[#2C2F63] shadow-md transition hover:-translate-y-0.5 hover:bg-white active:scale-[0.99]"
                 >
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">💌</span>
-                      <span className="text-xs font-extrabold text-slate-900">
+                      <span className="text-xs font-extrabold text-[#2C2F63]">
                         {letter.sender_name}
                       </span>
                       {letter.created_at && (
@@ -214,7 +214,7 @@ function OpenSnowballContent() {
                     {letter.content}
                   </p>
                   <div className="mt-2 flex justify-end">
-                    <span className="text-[10px] font-bold text-blue-600 group-hover:underline">
+                    <span className="text-[10px] font-bold text-[#2C2F63] group-hover:underline">
                       전문 읽기 →
                     </span>
                   </div>
@@ -224,10 +224,10 @@ function OpenSnowballContent() {
           )}
         </div>
 
-        {/* 하단 [당첨 발표 보기] 이동 버튼 */}
+        {/* 하단 [당첨 발표 보기] 이동 버튼 (#2C2F63 남색 통일) */}
         <Link
           href="/result"
-          className="mt-7 flex w-full items-center justify-center rounded-xl bg-slate-900 py-4 text-sm font-extrabold text-white shadow-lg transition hover:bg-slate-800 active:scale-[0.99]"
+          className="mt-7 flex w-full items-center justify-center rounded-xl bg-[#2C2F63] hover:bg-[#222552] py-4 text-sm font-extrabold text-white shadow-lg transition active:scale-[0.99]"
         >
           당첨 발표 보기 →
         </Link>

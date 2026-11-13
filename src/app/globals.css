@@ -1,64 +1,111 @@
+@import url("https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 기본 배경 및 폰트 스타일 설정 (모바일 360px~390px 한글 단어 단위 줄바꿈 기본 적용) */
+/* ============================================================================
+ * 동화/손그림 감성 무료 상업용 한글 웹폰트 정의 (학교안심 둥근미소 & 카페24 써라운드)
+ * ========================================================================== */
+@font-face {
+  font-family: "HakgyoansimDunggeunmisoTTF-B";
+  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/2408-5@1.0/HakgyoansimDunggeunmisoTTF-B.woff2")
+    format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cafe24Ssurround";
+  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/Cafe24Ssurround.woff")
+    format("woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 기본 배경 및 본문 폰트 설정 (모바일 360px~430px 한글 단어 단위 줄바꿈 기본 적용) */
 body {
-  background-color: #f3f4f6;
-  color: #111827;
-  font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  background-color: #1a1e43;
+  color: #2c2f63;
+  font-family: "Gowun Dodum", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
   word-break: keep-all;
   overflow-wrap: break-word;
+  letter-spacing: -0.01em;
+}
+
+/* 제목, 버튼, 강조 텍스트에 동글동글하고 따뜻한 학교안심 둥근미소 / 카페24 써라운드 적용 */
+h1,
+h2,
+h3,
+h4,
+button,
+.font-extrabold,
+.font-black,
+.font-display {
+  font-family: "HakgyoansimDunggeunmisoTTF-B", "Cafe24Ssurround", "Gowun Dodum",
+    sans-serif;
+  letter-spacing: -0.015em;
 }
 
 /* ============================================================================
- * 스노우볼 유리구슬 내부 2단계 눈 내리기 애니메이션 & 흔들기 모션
+ * 스노우볼 유리구슬 내부 손그림 불투명 눈송이 애니메이션 & 흔들기 모션
+ * - 투명도(opacity) 변화나 빛 번짐(blur/glow) 없이 100% 불투명(#FFFFFF) 유지
  * ========================================================================== */
 
-/* 1단계: 평상시(Idle) 잔잔하게 살랑살랑 내리는 눈송이 (6~10초 주기) */
+/* 1단계: 평상시(Idle) 위에서 아래로 잔잔하고 포근하게 살랑거리며 내려오는 모션 */
 @keyframes snowballIdleFall {
   0% {
-    transform: translate3d(0, -14px, 0);
-    opacity: 0;
+    transform: translate3d(0, -14px, 0) rotate(var(--snow-rot-start, 0deg));
   }
-  12% {
-    opacity: var(--snow-opacity, 0.7);
+  25% {
+    transform: translate3d(var(--snow-sway, 7px), 52px, 0)
+      rotate(calc(var(--snow-rot-start, 0deg) + 25deg));
   }
-  38% {
-    transform: translate3d(var(--snow-sway, 8px), 36%, 0);
+  50% {
+    transform: translate3d(calc(var(--snow-sway, 7px) * -0.6), 112px, 0)
+      rotate(calc(var(--snow-rot-start, 0deg) - 18deg));
   }
-  68% {
-    transform: translate3d(calc(var(--snow-sway, 8px) * -0.8), 72%, 0);
-  }
-  88% {
-    opacity: var(--snow-opacity, 0.7);
+  75% {
+    transform: translate3d(calc(var(--snow-sway, 7px) * 0.8), 172px, 0)
+      rotate(calc(var(--snow-rot-start, 0deg) + 15deg));
   }
   100% {
-    transform: translate3d(4px, 235px, 0);
-    opacity: 0;
+    transform: translate3d(0, 232px, 0) rotate(var(--snow-rot-end, 45deg));
   }
 }
 
-/* 2단계: 흔들기 클릭 시(Shaking) 펑펑 쏟아지며 휘날리는 함박눈 */
-@keyframes snowballBurstFall {
+/* 2단계: 흔들었을 때(Shake) 작은 불투명 눈송이 크기는 그대로 유지한 채
+   상하좌우 대각선 이리저리 자유롭게 소용돌이치며 흩날리다가 서서히 가라앉는 물리 모션 */
+@keyframes snowballShakeSwirl {
   0% {
-    transform: translate3d(0, -18px, 0) scale(0.9);
-    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg);
   }
-  10% {
-    opacity: 0.98;
+  14% {
+    transform: translate3d(var(--dx1, -28px), var(--dy1, -34px), 0)
+      rotate(45deg);
   }
-  35% {
-    transform: translate3d(var(--snow-sway, 18px), 42%, 0) scale(1.1);
+  30% {
+    transform: translate3d(var(--dx2, 32px), var(--dy2, 18px), 0)
+      rotate(-50deg);
   }
-  70% {
-    transform: translate3d(calc(var(--snow-sway, 18px) * -1), 82%, 0) scale(1);
-    opacity: 0.95;
+  46% {
+    transform: translate3d(var(--dx3, -24px), var(--dy3, 28px), 0)
+      rotate(65deg);
+  }
+  64% {
+    transform: translate3d(var(--dx4, 18px), var(--dy4, -16px), 0)
+      rotate(-30deg);
+  }
+  82% {
+    transform: translate3d(calc(var(--dx4, 18px) * 0.4), 22px, 0)
+      rotate(15deg);
   }
   100% {
-    transform: translate3d(6px, 240px, 0) scale(0.85);
-    opacity: 0;
+    transform: translate3d(var(--dx-end, 4px), var(--dy-end, 48px), 0)
+      rotate(0deg);
   }
 }
 
@@ -66,28 +113,28 @@ body {
 @keyframes snowballGlobeShake {
   0%,
   100% {
-    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+    transform: translate3d(0, 0, 0) rotate(0deg);
   }
   10% {
-    transform: translate3d(-8px, -6px, 0) rotate(-6deg) scale(1.04);
+    transform: translate3d(-7px, -5px, 0) rotate(-5deg);
   }
   22% {
-    transform: translate3d(8px, 4px, 0) rotate(6deg) scale(1.04);
+    transform: translate3d(7px, 3px, 0) rotate(5deg);
   }
   34% {
-    transform: translate3d(-7px, -5px, 0) rotate(-5deg) scale(1.04);
+    transform: translate3d(-6px, -4px, 0) rotate(-4deg);
   }
   46% {
-    transform: translate3d(7px, 4px, 0) rotate(5deg) scale(1.03);
+    transform: translate3d(6px, 3px, 0) rotate(4deg);
   }
   58% {
-    transform: translate3d(-5px, -3px, 0) rotate(-4deg) scale(1.03);
+    transform: translate3d(-4px, -2px, 0) rotate(-3deg);
   }
-  70% {
-    transform: translate3d(5px, 2px, 0) rotate(3deg) scale(1.02);
+  72% {
+    transform: translate3d(3px, 1px, 0) rotate(2deg);
   }
-  84% {
-    transform: translate3d(-3px, -1px, 0) rotate(-2deg) scale(1.01);
+  86% {
+    transform: translate3d(-2px, 0, 0) rotate(-1deg);
   }
 }
 

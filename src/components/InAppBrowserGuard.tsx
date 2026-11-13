@@ -175,7 +175,7 @@ export default function InAppBrowserGuard({
           <button
             type="button"
             onClick={handleCopyLink}
-            className="w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] text-white text-sm font-extrabold transition-all mb-4 shadow-xs"
+            className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold transition-all mb-4 shadow-xs"
           >
             {copied ? "✓ 링크가 복사되었어요!" : "링크 복사"}
           </button>
@@ -210,7 +210,7 @@ export default function InAppBrowserGuard({
           <button
             type="button"
             onClick={handleOpenChromeAndroid}
-            className="w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] text-white text-sm font-extrabold transition-all mb-3 shadow-xs"
+            className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold transition-all mb-3 shadow-xs"
           >
             Chrome으로 열기
           </button>

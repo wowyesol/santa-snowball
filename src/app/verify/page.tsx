@@ -242,7 +242,7 @@ export default function VerifyPage() {
           </p>
           <Link
             href="/login"
-            className="w-full py-3.5 rounded-xl bg-[#3898FF] text-white text-sm font-extrabold"
+            className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold"
           >
             로그인하고 내 스노우볼 만들기
           </Link>
@@ -327,14 +327,14 @@ export default function VerifyPage() {
 
             <Link
               href="/raffle"
-              className="block w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] text-white text-sm font-extrabold text-center shadow-md"
+              className="block w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold text-center shadow-md"
             >
               응모하러 가기
             </Link>
 
             <Link
               href={`/snowball/${encodeURIComponent(mySnowball.slug)}`}
-              className="block w-full py-3.5 rounded-xl bg-white hover:bg-sky-50 text-[#102A4E] text-sm font-extrabold text-center shadow-md"
+              className="block w-full py-3.5 rounded-xl bg-white hover:bg-slate-50 border border-[#2C2F63]/20 text-[#2C2F63] text-sm font-extrabold text-center shadow-md"
             >
               내 스노우볼 보기
             </Link>
@@ -400,7 +400,7 @@ export default function VerifyPage() {
 
             <Link
               href={`/snowball/${encodeURIComponent(mySnowball.slug)}`}
-              className="block w-full py-3.5 rounded-xl bg-white hover:bg-sky-50 text-[#102A4E] text-sm font-extrabold text-center shadow-md"
+              className="block w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold text-center shadow-md"
             >
               내 스노우볼 보기
             </Link>
@@ -444,7 +444,7 @@ export default function VerifyPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleSignupLinkClick}
-                className="block w-full py-3.5 px-3 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] text-white text-xs font-extrabold text-center transition-colors shadow-xs"
+                className="block w-full py-3.5 px-3 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-xs font-extrabold text-center transition-colors shadow-xs"
               >
                 {clickedAt
                   ? "Gemini 가입 바로가기 (다시 열기)"
@@ -609,29 +609,29 @@ export default function VerifyPage() {
               )}
             </section>
 
-            {/* 4. 허위 인증 회수 안내 박스 + 유의사항 동의 체크 + [제출하기] */}
-            <div className="w-full p-3.5 rounded-2xl bg-[#F4F9FF] text-[#0B1528] flex items-start gap-2.5 shadow-md">
-              <span className="w-5 h-5 rounded-full bg-[#1E88E5] text-white text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">
+            {/* 4. 허위 인증 회수 안내 박스 + 유의사항 동의 체크 + [제출하기] (하단 눈밭 위 선명한 대비 확보) */}
+            <div className="w-full p-3.5 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] flex items-start gap-2.5 shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
+              <span className="w-5 h-5 rounded-full bg-[#2C2F63] text-white text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">
                 !
               </span>
               <div>
-                <p className="text-xs font-extrabold text-[#102A4E]">
+                <p className="text-xs font-extrabold text-[#2C2F63]">
                   허위 인증 시 응모권 회수 · 당첨 취소
                 </p>
-                <p className="text-[11px] text-[#5B7493]">
+                <p className="text-[11px] font-semibold text-[#2C2F63]/75">
                   추첨 전 최종 검수에서 확인되면 지급된 응모권도 회수돼요.
                 </p>
               </div>
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer select-none px-1">
+            <label className="flex items-center gap-2 cursor-pointer select-none px-3.5 py-2.5 rounded-xl bg-white/90 border border-[#2C2F63]/15 shadow-2xs">
               <input
                 type="checkbox"
                 checked={noticeAgreed}
                 onChange={(e) => setNoticeAgreed(e.target.checked)}
-                className="w-4 h-4 rounded accent-[#3898FF]"
+                className="w-4 h-4 rounded accent-[#2C2F63]"
               />
-              <span className="text-xs font-extrabold text-white">
+              <span className="text-xs font-extrabold text-[#2C2F63]">
                 위 유의사항을 확인했어요.
               </span>
             </label>
@@ -641,8 +641,8 @@ export default function VerifyPage() {
               disabled={!canSubmit}
               className={`w-full py-3.5 rounded-xl text-sm font-extrabold shadow-lg transition-all ${
                 canSubmit
-                  ? "bg-[#3898FF] hover:bg-[#2589F5] text-white cursor-pointer"
-                  : "bg-[#5B87B8]/70 text-white/60 cursor-not-allowed"
+                  ? "bg-[#2C2F63] hover:bg-[#222552] text-white cursor-pointer"
+                  : "bg-[#2C2F63]/45 text-white/80 cursor-not-allowed"
               }`}
             >
               {submitting
@@ -653,7 +653,7 @@ export default function VerifyPage() {
             </button>
 
             {!clickedAt && (
-              <p className="text-center text-[11px] font-bold text-white/90">
+              <p className="text-center text-[11px] font-extrabold text-[#2C2F63]">
                 가입 링크를 먼저 클릭해야 인증을 제출할 수 있어요.
               </p>
             )}
@@ -706,7 +706,7 @@ export default function VerifyPage() {
               <button
                 type="button"
                 onClick={() => setIsExampleModalOpen(false)}
-                className="mt-3 w-full py-3 rounded-xl bg-[#3898FF] text-white text-xs font-extrabold"
+                className="mt-3 w-full py-3 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-xs font-extrabold"
               >
                 확인했어요
               </button>

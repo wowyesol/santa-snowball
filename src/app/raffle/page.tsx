@@ -134,7 +134,7 @@ export default function RafflePage() {
           </p>
           <Link
             href="/login"
-            className="w-full py-3.5 rounded-xl bg-[#3898FF] text-white text-sm font-extrabold"
+            className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold"
           >
             로그인하고 내 스노우볼 만들기
           </Link>
@@ -231,10 +231,10 @@ export default function RafflePage() {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#1E88E5] text-white text-[10px] font-extrabold mb-1">
+                    <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#2C2F63] text-white text-[10px] font-extrabold mb-1">
                       {prize.rankBadge}
                     </span>
-                    <h2 className="text-sm font-extrabold text-[#0D2B52] leading-snug break-keep">
+                    <h2 className="text-sm font-extrabold text-[#2C2F63] leading-snug break-keep">
                       {prize.name}
                     </h2>
                   </div>
@@ -317,15 +317,15 @@ export default function RafflePage() {
           </div>
         </div>
 
-        {/* [응모하기] 버튼 */}
+        {/* [응모하기] 버튼 (#2C2F63 남색 통일, 눈밭 위 선명한 대비) */}
         <button
           type="button"
           disabled={draftTotal <= 0 || submitting}
           onClick={() => setIsP03Open(true)}
           className={`w-full py-3.5 rounded-xl text-sm font-extrabold shadow-lg transition-all ${
             draftTotal > 0
-              ? "bg-[#3898FF] hover:bg-[#2589F5] text-white cursor-pointer"
-              : "bg-[#5B87B8]/70 text-white/60 cursor-not-allowed"
+              ? "bg-[#2C2F63] hover:bg-[#222552] text-white cursor-pointer"
+              : "bg-[#2C2F63]/45 text-white/80 cursor-not-allowed"
           }`}
         >
           응모하기
@@ -345,22 +345,22 @@ export default function RafflePage() {
             onClick={() => !submitting && setIsP03Open(false)}
           >
             <div
-              className="w-full max-w-[345px] max-h-[88vh] overflow-y-auto rounded-3xl bg-white text-[#0B1528] p-5 shadow-2xl text-left"
+              className="w-full max-w-[345px] max-h-[88vh] overflow-y-auto rounded-3xl bg-white text-[#2C2F63] p-5 shadow-2xl text-left"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-base font-extrabold text-[#102A4E] mb-1">
+              <h2 className="text-base font-extrabold text-[#2C2F63] mb-1">
                 응모권을 사용하시겠어요?
               </h2>
-              <p className="text-xs text-[#5B7493] mb-4">
+              <p className="text-xs text-[#2C2F63]/75 mb-4">
                 사용한 응모권은 변경하거나 취소할 수 없어요.
               </p>
 
               {/* 배분 요약 박스 */}
-              <div className="w-full p-3.5 rounded-2xl bg-[#EBF4FF] space-y-1.5 text-xs mb-4">
+              <div className="w-full p-3.5 rounded-2xl bg-[#F4F6FC] space-y-1.5 text-xs mb-4">
                 {SAMPLE_PRIZES.map((prize) => (
                   <div
                     key={prize.id}
-                    className="flex items-center justify-between text-[#102A4E]"
+                    className="flex items-center justify-between text-[#2C2F63]"
                   >
                     <span className="font-medium">{prize.shortTitle}</span>
                     <strong className="font-extrabold">
@@ -368,7 +368,7 @@ export default function RafflePage() {
                     </strong>
                   </div>
                 ))}
-                <div className="pt-1.5 border-t border-[#CFE4FA] flex items-center justify-between text-[#0D2B52] font-extrabold">
+                <div className="pt-1.5 border-t border-[#2C2F63]/15 flex items-center justify-between text-[#2C2F63] font-extrabold">
                   <span>총 사용 응모권</span>
                   <span>{draftTotal}장</span>
                 </div>
@@ -379,7 +379,7 @@ export default function RafflePage() {
                   type="button"
                   disabled={submitting}
                   onClick={handleConfirmSubmit}
-                  className="w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] text-white text-xs font-extrabold transition-colors disabled:opacity-50"
+                  className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-xs font-extrabold transition-colors disabled:opacity-50"
                 >
                   {submitting ? "저장 중..." : "이대로 걸기"}
                 </button>
@@ -388,7 +388,7 @@ export default function RafflePage() {
                   type="button"
                   disabled={submitting}
                   onClick={() => setIsP03Open(false)}
-                  className="w-full py-3 rounded-xl border border-[#DCEBFA] bg-white text-[#102A4E] text-xs font-extrabold hover:bg-slate-50 transition-colors"
+                  className="w-full py-3 rounded-xl border border-[#2C2F63]/20 bg-white text-[#2C2F63] text-xs font-extrabold hover:bg-slate-50 transition-colors"
                 >
                   다시 고르기
                 </button>

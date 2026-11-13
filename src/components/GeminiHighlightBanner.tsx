@@ -35,12 +35,12 @@ export default function GeminiHighlightBanner({
     <button
       type="button"
       onClick={handleBannerClick}
-      className="group relative w-full p-[2px] rounded-2xl bg-gradient-to-r from-amber-300 via-emerald-300 to-sky-400 shadow-[0_0_20px_rgba(251,191,36,0.35)] hover:shadow-[0_0_26px_rgba(52,211,153,0.5)] active:scale-[0.99] transition-all text-left"
+      className="group relative w-full p-[2px] rounded-2xl bg-gradient-to-r from-amber-300 via-emerald-300 to-sky-300 shadow-[0_6px_18px_rgba(26,30,67,0.2)] active:scale-[0.99] transition-all text-left"
     >
-      <div className="w-full h-auto rounded-[14px] bg-gradient-to-r from-[#0F2442] via-[#163862] to-[#1A4977] px-3.5 py-3.5 flex items-center justify-between gap-2.5">
+      <div className="w-full h-auto rounded-[14px] bg-gradient-to-r from-[#1A1E43] via-[#2C2F63] to-[#3A3E7A] px-3.5 py-3.5 flex items-center justify-between gap-2.5">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* 빛나는 Gemini 아이콘 박스 */}
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-300 via-teal-200 to-sky-300 text-[#0B1528] flex flex-col items-center justify-center shrink-0 shadow-md">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-300 via-teal-200 to-sky-300 text-[#1A1E43] flex flex-col items-center justify-center shrink-0 shadow-md">
             <span className="text-sm font-black leading-none">✦</span>
             <span className="text-[9px] font-black tracking-tighter mt-0.5">
               +100

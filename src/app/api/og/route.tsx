@@ -6,29 +6,28 @@ import path from "path";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// 밤하늘 배경 위에 은은하게 배치할 눈송이 점 좌표 및 크기 (1200x630 기준)
+// 크레용 밤하늘 배경 위에 100% 불투명(#FFFFFF) 비정형 조약돌 모양으로 배치할 눈송이 점 좌표 (1200x630 기준)
 const SNOWFLAKE_DOTS = [
-  { left: 110, top: 85, size: 8, opacity: 0.55 },
-  { left: 240, top: 190, size: 6, opacity: 0.4 },
-  { left: 160, top: 380, size: 10, opacity: 0.5 },
-  { left: 290, top: 490, size: 7, opacity: 0.45 },
-  { left: 390, top: 110, size: 9, opacity: 0.6 },
-  { left: 450, top: 270, size: 6, opacity: 0.35 },
-  { left: 760, top: 95, size: 8, opacity: 0.55 },
-  { left: 840, top: 230, size: 10, opacity: 0.5 },
-  { left: 930, top: 130, size: 7, opacity: 0.45 },
-  { left: 1060, top: 210, size: 9, opacity: 0.6 },
-  { left: 980, top: 410, size: 8, opacity: 0.5 },
-  { left: 1090, top: 510, size: 6, opacity: 0.4 },
-  { left: 820, top: 500, size: 7, opacity: 0.45 },
-  { left: 340, top: 540, size: 6, opacity: 0.35 },
+  { left: 110, top: 85, w: 9, h: 7, radius: "58% 42% 63% 37%" },
+  { left: 240, top: 190, w: 7, h: 6, radius: "44% 56% 39% 61%" },
+  { left: 160, top: 380, w: 10, h: 8, radius: "64% 36% 52% 48%" },
+  { left: 290, top: 490, w: 8, h: 7, radius: "49% 51% 62% 38%" },
+  { left: 390, top: 110, w: 9, h: 8, radius: "37% 63% 55% 45%" },
+  { left: 450, top: 270, w: 7, h: 6, radius: "61% 39% 44% 56%" },
+  { left: 760, top: 95, w: 9, h: 7, radius: "58% 42% 63% 37%" },
+  { left: 840, top: 230, w: 10, h: 8, radius: "44% 56% 39% 61%" },
+  { left: 930, top: 130, w: 8, h: 7, radius: "64% 36% 52% 48%" },
+  { left: 1060, top: 210, w: 9, h: 8, radius: "49% 51% 62% 38%" },
+  { left: 980, top: 410, w: 8, h: 7, radius: "37% 63% 55% 45%" },
+  { left: 1090, top: 510, w: 7, h: 6, radius: "61% 39% 44% 56%" },
+  { left: 820, top: 500, w: 8, h: 7, radius: "58% 42% 63% 37%" },
+  { left: 340, top: 540, w: 7, h: 6, radius: "44% 56% 39% 61%" },
 ];
 
 function getSnowballFilenameByLevel(levelParam: string | null): string {
   const lv = Number(levelParam);
   if (!Number.isNaN(lv)) {
-    if (lv >= 10) return "lv10_snowball.png";
-    if (lv >= 3) return "lv3_Snowball.png";
+    if (lv >= 3) return "lv3_snowball.png";
     if (lv >= 1) return "lv1_snowball.png";
   }
   return "lv0_snowball.png";
@@ -37,8 +36,7 @@ function getSnowballFilenameByLevel(levelParam: string | null): string {
 /**
  * 카카오톡 · 인스타그램 DM 등 SNS 공유용 동적 Open Graph 썸네일 생성 라우트 (/api/og)
  * - 규격: 1200 x 630 px
- * - 향후 public/og-thumbnail.png 파일이 추가되면 해당 이미지를 최우선으로 반환합니다.
- * - 기본 동작: 크리스마스 밤하늘 네이비 그라데이션(#0B192C ~ #16325B) + 은은한 눈송이 배경 정중앙에
+ * - 새 크레용 동화 밤하늘 톤(#1A1E43 ~ #2C2F63) + 불투명 순백색(#FFFFFF) 눈송이 배경 정중앙에
  *   유저 레벨(또는 기본) 스노우볼 PNG 일러스트를 높이 480px로 선명하게 배치합니다.
  */
 export async function GET(req: NextRequest) {
@@ -85,23 +83,11 @@ export async function GET(req: NextRequest) {
             alignItems: "center",
             justifyContent: "center",
             position: "relative",
-            background: "linear-gradient(180deg, #0B192C 0%, #16325B 100%)",
+            background: "linear-gradient(180deg, #1A1E43 0%, #2C2F63 100%)",
             overflow: "hidden",
           }}
         >
-          {/* 중앙 스노우볼 뒤편 은은한 밤하늘 빛무리 */}
-          <div
-            style={{
-              position: "absolute",
-              width: "540px",
-              height: "540px",
-              borderRadius: "9999px",
-              background:
-                "radial-gradient(circle, rgba(56,152,255,0.22) 0%, rgba(22,50,91,0) 70%)",
-            }}
-          />
-
-          {/* 은은한 작은 흰색 눈송이 점 배치 */}
+          {/* 불투명 순백색(#FFFFFF) 손그림 눈송이 점 배치 */}
           {SNOWFLAKE_DOTS.map((dot, idx) => (
             <div
               key={idx}
@@ -109,10 +95,10 @@ export async function GET(req: NextRequest) {
                 position: "absolute",
                 left: `${dot.left}px`,
                 top: `${dot.top}px`,
-                width: `${dot.size}px`,
-                height: `${dot.size}px`,
-                borderRadius: "9999px",
-                backgroundColor: `rgba(255, 255, 255, ${dot.opacity})`,
+                width: `${dot.w}px`,
+                height: `${dot.h}px`,
+                borderRadius: dot.radius,
+                backgroundColor: "#FFFFFF",
               }}
             />
           ))}

@@ -32,14 +32,21 @@ const SUB_ROUTES = new Set([
   "/guide",
 ]);
 
+// 밤하늘 상단 영역에 100% 불투명(#FFFFFF) 비정형 조약돌 모양으로 찍히는 손그림 눈송이 점
+const SKY_CRAYON_FLAKES = [
+  { top: "88px", left: "26px", w: 4, h: 3.5, radius: "58% 42% 63% 37% / 45% 55% 45% 55%", rot: 12 },
+  { top: "142px", right: "34px", w: 4.5, h: 4, radius: "44% 56% 39% 61% / 57% 41% 59% 43%", rot: -18 },
+  { top: "238px", left: "18px", w: 3.5, h: 4, radius: "64% 36% 52% 48% / 42% 62% 38% 58%", rot: 25 },
+  { top: "310px", right: "22px", w: 4, h: 3.5, radius: "49% 51% 62% 38% / 63% 44% 56% 37%", rot: -10 },
+  { top: "415px", left: "32px", w: 4.5, h: 3.5, radius: "37% 63% 55% 45% / 48% 54% 46% 52%", rot: 16 },
+  { top: "485px", right: "28px", w: 3.5, h: 3.5, radius: "61% 39% 44% 56% / 53% 38% 62% 47%", rot: -22 },
+];
+
 /**
  * 공통 모바일 웹 프레임 (390px 표준, 최대 430px 중앙 정렬)
- * - 밤하늘 네이비~블루 수직 그라데이션 배경 (from-[#0B1528] via-[#13315C] to-[#2B6CB0]) + 별빛/눈송이 효과
- * - 최상단 고정 헤더:
- *   · 서브 화면(S02, S06, S07, S08, S10, S11, S12)에서는 좌측에 [< 이전] 버튼 표시 (히스토리 없어도 안전하게 S04 또는 S01로 복귀)
- *   · 좌측 logo.png (클릭 시 내 스노우볼/홈 이동), 우측 비로그인 시 [이벤트 안내] / 로그인 시 [응모권 N장]
- * - 헤더 아래 밝은 파란색(#1E88E5) 마감 안내 띠 배너 고정 표시
- * - 페이지별 콘텐츠 길이에 맞춰 자연스러운 높이를 유지하고(과도한 빈 여백 제거), 본문 바로 아래 하단 공통 푸터가 이어지도록 구성
+ * - 크레용 동화 일러스트 배경 (/bg-night-snow.png):
+ *   상단 진한 밤하늘(#1A1E43) ~ 하단 따뜻한 크림빛 눈언덕(#FAF0DC)으로 자연스럽게 이어지도록 구성
+ * - 하단 흰 눈밭(#FAF0DC) 영역 위에 놓이는 푸터 및 보조 텍스트는 모두 짙은 남색(#2C2F63)으로 대비 확보
  */
 export default function AppShell({
   children,
@@ -71,8 +78,7 @@ export default function AppShell({
   useEffect(() => {
     syncHeader();
 
-    // [핵심 버그 방지] 이미 로그인된 유저가 공유 링크(/?sb=[targetSlug])로 접속했거나,
-    // 내 스노우볼 페이지로 잘못 진입했지만 URL에 다른 친구의 sb 파라미터가 남아있는 경우 즉시 친구 스노우볼(S05)로 이동!
+    // 이미 로그인된 유저가 공유 링크(/?sb=[targetSlug])로 접속한 경우 즉시 친구 스노우볼(S05)로 이동
     async function enforceInviteRedirect() {
       if (typeof window === "undefined") return;
       const params = new URLSearchParams(window.location.search);
@@ -90,7 +96,7 @@ export default function AppShell({
     }
     enforceInviteRedirect();
 
-    // 플래시 토스트(예: "존재하지 않는 스노우볼입니다.") 확인
+    // 플래시 토스트 확인
     const checkToast = () => {
       const msg = consumeFlashToast();
       if (msg) {
@@ -108,7 +114,7 @@ export default function AppShell({
       window.removeEventListener("santa-auth-changed", syncHeader);
       window.removeEventListener("santa-toast", checkToast);
     };
-  }, [syncHeader]);
+  }, [syncHeader, router]);
 
   const homeHref = auth?.snowball
     ? `/snowball/${encodeURIComponent(auth.snowball.slug)}`
@@ -116,12 +122,6 @@ export default function AppShell({
 
   const showBackButton = Boolean(pathname && SUB_ROUTES.has(pathname));
 
-  /**
-   * 상단 [< 이전] 버튼 클릭 핸들러:
-   * - S02(/login): S01(/)로 이동 (초대 슬러그가 있으면 보존)
-   * - S12(/guide): 로그인 시 내 스노우볼 홈(S04), 비로그인 시 S01(/)로 이동
-   * - 그 외 서브 화면(S06, S07, S08, S10, S11): 히스토리가 없더라도 무조건 내 스노우볼 홈(S04)으로 안전하게 이동
-   */
   const handleBackNavigation = () => {
     if (pathname === "/login") {
       if (typeof window !== "undefined") {
@@ -145,37 +145,24 @@ export default function AppShell({
   };
 
   return (
-    <div className="relative w-full max-w-[430px] mx-auto flex flex-col bg-gradient-to-b from-[#0B1528] via-[#13315C] to-[#2B6CB0] text-white shadow-2xl">
-      {/* 밤하늘 은은한 눈송이/별빛 파티클 장식 */}
-      <div
-        className="pointer-events-none absolute inset-0 overflow-hidden opacity-60"
-        aria-hidden="true"
-      >
-        <span className="absolute top-24 left-8 w-1 h-1 rounded-full bg-white/80 animate-pulse" />
-        <span className="absolute top-36 right-10 w-1.5 h-1.5 rounded-full bg-sky-200/70" />
-        <span className="absolute top-64 left-6 w-1 h-1 rounded-full bg-white/60" />
-        <span className="absolute top-80 right-7 w-1 h-1 rounded-full bg-amber-200/70 animate-pulse" />
-        <span className="absolute top-[420px] left-12 w-1.5 h-1.5 rounded-full bg-white/40" />
-        <span className="absolute top-[520px] right-12 w-1 h-1 rounded-full bg-white/50" />
-      </div>
-
+    <div className="relative w-full max-w-[430px] mx-auto flex flex-col bg-[#1A1E43] text-white shadow-2xl overflow-x-hidden">
       {/* 전역 토스트 알림 */}
       {toastMsg && (
-        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-[80] w-[90%] max-w-[360px] px-4 py-3 rounded-2xl bg-[#0B1528]/95 border border-amber-300/60 text-white text-xs font-bold text-center shadow-2xl animate-bounce">
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-[80] w-[90%] max-w-[360px] px-4 py-3 rounded-2xl bg-[#2C2F63] border border-[#FAF0DC]/60 text-white text-xs font-extrabold text-center shadow-2xl animate-bounce">
           ⚠️ {toastMsg}
         </div>
       )}
 
-      {/* 상단 고정 영역 + 본문 (불필요한 빈 여백 밀어내기 없이 콘텐츠 길이에 맞춤) */}
+      {/* 상단 고정 헤더 + 마감 안내 배너 + 크레용 밤하늘·눈언덕 배경 본문 */}
       <div className="relative z-10 flex flex-col">
         {/* 1) 최상단 헤더 */}
-        <header className="sticky top-0 z-40 w-full bg-[#152238]/95 backdrop-blur border-b border-white/10 px-4 py-2.5 flex items-center justify-between gap-2">
+        <header className="sticky top-0 z-40 w-full bg-[#1A1E43]/95 backdrop-blur border-b border-white/10 px-4 py-2.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             {showBackButton && (
               <button
                 type="button"
                 onClick={handleBackNavigation}
-                className="inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-extrabold transition-colors shrink-0"
+                className="inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-[11px] font-extrabold transition-colors shrink-0"
                 aria-label="이전 화면으로 이동"
               >
                 <span>‹</span>
@@ -196,57 +183,90 @@ export default function AppShell({
           {auth?.snowball ? (
             <Link
               href="/raffle"
-              className="px-3 py-1 rounded-full bg-white text-[#0B1528] text-[11px] font-extrabold shadow-xs hover:bg-sky-50 transition-colors shrink-0"
+              className="px-3 py-1 rounded-full bg-[#FAF0DC] text-[#2C2F63] text-[11px] font-extrabold shadow-xs hover:bg-white transition-colors shrink-0"
             >
               응모권 {ticketBadgeCount}장
             </Link>
           ) : (
             <Link
               href="/guide"
-              className="px-3 py-1 rounded-full bg-white text-[#0B1528] text-[11px] font-extrabold shadow-xs hover:bg-sky-50 transition-colors shrink-0"
+              className="px-3 py-1 rounded-full bg-[#FAF0DC] text-[#2C2F63] text-[11px] font-extrabold shadow-xs hover:bg-white transition-colors shrink-0"
             >
               이벤트 안내
             </Link>
           )}
         </header>
 
-        {/* 2) 마감 안내 띠 배너 (#1E88E5) */}
+        {/* 2) 마감 안내 띠 배너 (#2C2F63 크레용 남색 톤) */}
         {!hideDeadlineBanner && (
-          <div className="w-full bg-[#1E88E5] text-white text-center py-2 px-3 text-[11px] font-bold tracking-tight shadow-xs">
+          <div className="w-full bg-[#2C2F63] text-[#FAF0DC] text-center py-2 px-3 text-[11px] font-extrabold tracking-tight border-b border-white/10 shadow-xs">
             11.28 당첨자 공개 · 12.1 편지 공개
           </div>
         )}
 
-        {/* 본문 컨텐츠 영역 */}
-        <main className="flex flex-col">{children}</main>
-      </div>
-
-      {/* 하단 공통 푸터 */}
-      {!hideFooter && (
-        <footer className="relative z-10 w-full bg-[#E8F2FF] text-[#5B7493] py-6 px-4 flex flex-col items-center text-center gap-2 border-t border-white/40">
-          <div className="inline-flex items-center gap-1 px-4 py-1 rounded-full bg-white border border-[#90B8E8] text-[11px] font-extrabold text-[#0B1528] shadow-2xs">
-            <span>Built with</span>
-            <span className="text-[#1E88E5]">Gemini</span>
+        {/* 3) 본문 컨텐츠 영역:
+            상단 #1A1E43 단색에서 시작해 하단 /bg-night-snow.png 눈언덕(#FAF0DC)으로 자연스럽게 이어짐 */}
+        <main
+          className="relative flex flex-col min-h-[700px] bg-[#1A1E43] bg-bottom bg-no-repeat bg-[length:100%_auto]"
+          style={{
+            backgroundImage: "url('/bg-night-snow.png')",
+          }}
+        >
+          {/* 밤하늘 상단 영역 100% 불투명(#FFFFFF) 비정형 손그림 눈송이 조각 */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-[520px] overflow-hidden"
+            aria-hidden="true"
+          >
+            {SKY_CRAYON_FLAKES.map((flake, idx) => (
+              <span
+                key={idx}
+                style={{
+                  top: flake.top,
+                  left: flake.left,
+                  right: flake.right,
+                  width: `${flake.w}px`,
+                  height: `${flake.h}px`,
+                  borderRadius: flake.radius,
+                  backgroundColor: "#FFFFFF",
+                  transform: `rotate(${flake.rot}deg)`,
+                }}
+                className="absolute block"
+              />
+            ))}
           </div>
 
-          <div className="text-[11px] font-medium text-[#5B7493] space-x-1.5">
+          <div className="relative z-10 flex flex-col flex-1">{children}</div>
+        </main>
+      </div>
+
+      {/* 하단 공통 푸터: 눈언덕 하단 컬러(#FAF0DC)와 자연스럽게 이어지며 짙은 남색(#2C2F63) 텍스트로 가독성 확보 */}
+      {!hideFooter && (
+        <footer className="relative z-10 w-full bg-[#FAF0DC] text-[#2C2F63] pt-3 pb-7 px-4 flex flex-col items-center text-center gap-2">
+          <div className="inline-flex items-center gap-1 px-4 py-1 rounded-full bg-white/90 border border-[#2C2F63]/20 text-[11px] font-extrabold text-[#2C2F63] shadow-2xs">
+            <span>Built with</span>
+            <span className="text-[#2C2F63] underline decoration-[#2C2F63]/40">
+              Gemini
+            </span>
+          </div>
+
+          <div className="text-[11px] font-extrabold text-[#2C2F63] space-x-1.5">
             <Link href="/guide" className="hover:underline">
               이벤트 안내 · 유의사항
             </Link>
-            <span>|</span>
+            <span className="opacity-40">|</span>
             <Link href="/guide#privacy" className="hover:underline">
               개인정보 처리방침
             </Link>
             {auth?.isAuthenticated && (
               <>
-                <span>|</span>
+                <span className="opacity-40">|</span>
                 <button
                   type="button"
                   onClick={async () => {
                     await signOutAll();
                     router.push("/");
                   }}
-                  className="hover:underline text-[#7A93B2]"
+                  className="hover:underline text-[#2C2F63]/80"
                 >
                   로그아웃
                 </button>
@@ -254,7 +274,7 @@ export default function AppShell({
             )}
           </div>
 
-          <p className="text-[10px] text-[#7A93B2]">
+          <p className="text-[10px] font-bold text-[#2C2F63]/70">
             2026 Google Student Ambassador · 성신여대
           </p>
         </footer>

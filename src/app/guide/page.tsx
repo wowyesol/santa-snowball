@@ -54,8 +54,10 @@ export default function GuidePage() {
 
         {/* 1. 참여 방법 */}
         <section className="mt-6">
-          <h2 className="mb-2 text-sm font-extrabold text-white">참여 방법</h2>
-          <div className="rounded-2xl bg-white/95 p-4 text-xs leading-relaxed text-slate-800 shadow-md">
+          <h2 className="mb-2 inline-block px-3 py-1 rounded-full bg-[#2C2F63] text-xs font-extrabold text-white shadow-xs">
+            참여 방법
+          </h2>
+          <div className="rounded-2xl border border-[#2C2F63]/15 bg-white/95 p-4 text-xs leading-relaxed text-slate-800 shadow-md">
             <ol className="space-y-1.5 font-medium">
               <li>
                 <strong className="font-extrabold text-slate-900">1.</strong>{" "}
@@ -79,8 +81,10 @@ export default function GuidePage() {
 
         {/* 2. 응모권 규칙 */}
         <section className="mt-5">
-          <h2 className="mb-2 text-sm font-extrabold text-white">응모권 규칙</h2>
-          <div className="rounded-2xl bg-white/95 p-4 text-xs text-slate-800 shadow-md break-keep">
+          <h2 className="mb-2 inline-block px-3 py-1 rounded-full bg-[#2C2F63] text-xs font-extrabold text-white shadow-xs">
+            응모권 규칙
+          </h2>
+          <div className="rounded-2xl border border-[#2C2F63]/15 bg-white/95 p-4 text-xs text-slate-800 shadow-md break-keep">
             <div className="divide-y divide-slate-100">
               <div className="flex items-center justify-between gap-3 py-2">
                 <span className="font-medium text-slate-600">최초 가입 보너스</span>
@@ -103,10 +107,10 @@ export default function GuidePage() {
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3 py-2">
-                <span className="font-bold text-blue-700 leading-snug">
+                <span className="font-bold text-[#2C2F63] leading-snug">
                   Gemini 대학생 플랜 가입 주문 영수증 캡처 1장 승인
                 </span>
-                <span className="shrink-0 font-extrabold text-blue-700 text-right">
+                <span className="shrink-0 font-extrabold text-[#2C2F63] text-right">
                   +100장 · LV+1
                 </span>
               </div>
@@ -124,8 +128,10 @@ export default function GuidePage() {
 
         {/* 3. 당첨 방식 */}
         <section className="mt-5">
-          <h2 className="mb-2 text-sm font-extrabold text-white">당첨 방식</h2>
-          <div className="rounded-2xl bg-white/95 p-4 text-xs leading-relaxed text-slate-700 shadow-md break-keep">
+          <h2 className="mb-2 inline-block px-3 py-1 rounded-full bg-[#2C2F63] text-xs font-extrabold text-white shadow-xs">
+            당첨 방식
+          </h2>
+          <div className="rounded-2xl border border-[#2C2F63]/15 bg-white/95 p-4 text-xs leading-relaxed text-slate-700 shadow-md break-keep">
             <ul className="list-disc space-y-1.5 pl-4 font-medium">
               <li>
                 <strong className="font-extrabold text-slate-900">
@@ -143,26 +149,22 @@ export default function GuidePage() {
           </div>
         </section>
 
-        {/* 4. 사인업 레벨 · 스노우볼 업그레이드 (LV 0 -> 1 -> 3 -> 10 통일) */}
+        {/* 4. 사인업 레벨 · 스노우볼 업그레이드 */}
         <section className="mt-5">
-          <h2 className="mb-2 text-sm font-extrabold text-white">
+          <h2 className="mb-2 inline-block px-3 py-1 rounded-full bg-[#2C2F63] text-xs font-extrabold text-white shadow-xs">
             사인업 레벨 · 스노우볼 업그레이드
           </h2>
-          <div className="rounded-2xl bg-white/95 p-4 text-xs text-slate-800 shadow-md break-keep">
+          <div className="rounded-2xl border border-[#2C2F63]/15 bg-white/95 p-4 text-xs text-slate-800 shadow-md break-keep">
             <p className="leading-relaxed font-medium text-slate-600">
-              내 Gemini 가입 인증(+1)과 내가 추천한 친구의 가입 인증(+1/명)이 쌓일 때마다 사인업 레벨이 올라가고 스노우볼 받침대 디자인이 업그레이드돼요.
-            </p>
-            <p className="mt-1.5 font-extrabold text-slate-900 leading-snug">
-              LV0 기본(회색) → LV1 파랑(1명) → LV3 빨강(3명) → LV10 황금(10명)
+              내 Gemini 가입 인증(+1)과 내가 추천한 친구의 가입 인증(+1/명)이 쌓일 때마다 사인업 레벨이 올라가고 스노우볼 디자인이 업그레이드돼요.
             </p>
 
-            {/* 4단계 스노우볼 이미지 미리보기 */}
-            <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
+            {/* 3단계 스노우볼 이미지 미리보기 */}
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
               {[
-                { lv: "LV 0", name: "기본 회색", img: "/lv0_snowball.png" },
-                { lv: "LV 1", name: "1명 파랑", img: "/lv1_snowball.png" },
-                { lv: "LV 3", name: "3명 빨강", img: "/lv3_Snowball.png" },
-                { lv: "LV 10", name: "10명 황금", img: "/lv10_snowball.png" },
+                { lv: "Lv.1", name: "기본 스노우볼", img: "/lv0_snowball.png" },
+                { lv: "Lv.3", name: "리본 스노우볼", img: "/lv1_snowball.png" },
+                { lv: "Lv.10", name: "황금 스노우볼", img: "/lv3_snowball.png" },
               ].map((item) => (
                 <div
                   key={item.lv}
@@ -172,13 +174,10 @@ export default function GuidePage() {
                   <img
                     src={item.img}
                     alt={item.name}
-                    className="h-11 w-11 object-contain"
+                    className="h-12 w-12 object-contain"
                   />
-                  <span className="mt-1 text-[10px] font-extrabold text-slate-900">
+                  <span className="mt-1 text-[10px] font-extrabold text-[#2C2F63]">
                     {item.lv}
-                  </span>
-                  <span className="text-[9px] font-semibold text-slate-500 break-keep">
-                    {item.name}
                   </span>
                 </div>
               ))}
@@ -187,8 +186,8 @@ export default function GuidePage() {
 
           {/* 주의사항 강조 박스 2개 */}
           <div className="mt-2.5 space-y-2">
-            <div className="rounded-xl border border-slate-800 bg-white p-3.5 text-slate-900 shadow-xs">
-              <p className="text-xs font-extrabold text-slate-900">
+            <div className="rounded-xl border border-[#2C2F63]/20 bg-white p-3.5 text-slate-900 shadow-xs">
+              <p className="text-xs font-extrabold text-[#2C2F63]">
                 ! 기존 Gemini 이용자 참여 불가
               </p>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
@@ -196,8 +195,8 @@ export default function GuidePage() {
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-800 bg-white p-3.5 text-slate-900 shadow-xs">
-              <p className="text-xs font-extrabold text-slate-900">
+            <div className="rounded-xl border border-[#2C2F63]/20 bg-white p-3.5 text-slate-900 shadow-xs">
+              <p className="text-xs font-extrabold text-[#2C2F63]">
                 ! 허위 · 부정 인증 시 응모권 회수 및 당첨 취소
               </p>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
@@ -209,10 +208,10 @@ export default function GuidePage() {
 
         {/* 5. 경품 안내 (총 23명 · 70만 원) */}
         <section className="mt-5">
-          <h2 className="mb-2 text-sm font-extrabold text-white">
+          <h2 className="mb-2 inline-block px-3 py-1 rounded-full bg-[#2C2F63] text-xs font-extrabold text-white shadow-xs">
             경품 (총 23명 · 70만 원)
           </h2>
-          <div className="rounded-2xl bg-white/95 p-4 text-xs text-slate-800 shadow-md">
+          <div className="rounded-2xl border border-[#2C2F63]/15 bg-white/95 p-4 text-xs text-slate-800 shadow-md">
             <div className="divide-y divide-slate-100">
               <div className="flex items-center justify-between py-2">
                 <span className="font-semibold text-slate-700">
@@ -244,8 +243,10 @@ export default function GuidePage() {
 
         {/* 6. 일정 안내 */}
         <section className="mt-5">
-          <h2 className="mb-2 text-sm font-extrabold text-white">일정</h2>
-          <div className="rounded-2xl bg-white/95 p-4 text-xs text-slate-800 shadow-md">
+          <h2 className="mb-2 inline-block px-3 py-1 rounded-full bg-[#2C2F63] text-xs font-extrabold text-white shadow-xs">
+            일정
+          </h2>
+          <div className="rounded-2xl border border-[#2C2F63]/15 bg-white/95 p-4 text-xs text-slate-800 shadow-md">
             <div className="divide-y divide-slate-100">
               <div className="flex items-center justify-between py-2">
                 <span className="font-semibold text-slate-600">참여 기간</span>
@@ -253,11 +254,11 @@ export default function GuidePage() {
               </div>
               <div className="flex items-center justify-between py-2">
                 <span className="font-semibold text-slate-600">당첨자 공개</span>
-                <span className="font-extrabold text-blue-700">11/28</span>
+                <span className="font-extrabold text-[#2C2F63]">11/28</span>
               </div>
               <div className="flex items-center justify-between py-2">
                 <span className="font-semibold text-slate-600">편지 공개</span>
-                <span className="font-extrabold text-blue-700">12/1</span>
+                <span className="font-extrabold text-[#2C2F63]">12/1</span>
               </div>
             </div>
           </div>
@@ -265,7 +266,7 @@ export default function GuidePage() {
 
         {/* 7. 자주 묻는 질문 (클릭형 아코디언 4개) */}
         <section className="mt-5">
-          <h2 className="mb-2 text-sm font-extrabold text-white">
+          <h2 className="mb-2 inline-block px-3 py-1 rounded-full bg-[#2C2F63] text-xs font-extrabold text-white shadow-xs">
             자주 묻는 질문
           </h2>
           <div className="space-y-2">
@@ -274,12 +275,12 @@ export default function GuidePage() {
               return (
                 <div
                   key={item.q}
-                  className="overflow-hidden rounded-xl bg-white/95 text-slate-900 shadow-md transition"
+                  className="overflow-hidden rounded-xl border border-[#2C2F63]/15 bg-white/95 text-slate-900 shadow-md transition"
                 >
                   <button
                     type="button"
                     onClick={() => toggleFaq(idx)}
-                    className="flex w-full items-center justify-between px-4 py-3.5 text-left text-xs font-extrabold text-slate-900 hover:bg-slate-50"
+                    className="flex w-full items-center justify-between px-4 py-3.5 text-left text-xs font-extrabold text-[#2C2F63] hover:bg-slate-50"
                   >
                     <span>{item.q}</span>
                     <span className="ml-2 text-slate-400">
@@ -299,10 +300,10 @@ export default function GuidePage() {
 
         {/* 8. 개인정보 처리 안내 (#privacy 앵커 지원) */}
         <section id="privacy" className="mt-5 scroll-mt-20">
-          <h2 className="mb-2 text-sm font-extrabold text-white">
+          <h2 className="mb-2 inline-block px-3 py-1 rounded-full bg-[#2C2F63] text-xs font-extrabold text-white shadow-xs">
             개인정보 처리 안내
           </h2>
-          <div className="rounded-2xl bg-white/95 p-4 text-[11px] leading-relaxed font-medium text-slate-600 shadow-md">
+          <div className="rounded-2xl border border-[#2C2F63]/15 bg-white/95 p-4 text-[11px] leading-relaxed font-medium text-slate-600 shadow-md">
             수집 항목: 구글 계정 이메일, 닉네임, 이벤트 참여 기록, (선택) Gemini 대학생 플랜 가입 주문 영수증 캡처 1장, (당첨자) 이름 · 연락처 · 이메일. 수집 목적: 이벤트 운영 및 경품 발송. 보유 기간: 이벤트 종료 및 경품 발송 완료 후 30일 이내 파기.
           </div>
         </section>

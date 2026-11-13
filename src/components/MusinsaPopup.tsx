@@ -60,11 +60,11 @@ export default function MusinsaPopup({
           />
         </div>
 
-        {/* 하단 파란색 CTA 버튼: '편지쓰러 가기' */}
+        {/* 하단 남색(#2C2F63) CTA 버튼: '편지쓰러 가기' */}
         <button
           type="button"
           onClick={onApply}
-          className="w-full py-3.5 rounded-xl bg-[#3898FF] hover:bg-[#2589F5] active:scale-[0.99] text-white text-sm font-extrabold transition-all shadow-sm"
+          className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] active:scale-[0.99] text-white text-sm font-extrabold transition-all shadow-md"
         >
           편지쓰러 가기
         </button>
