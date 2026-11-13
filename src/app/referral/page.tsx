@@ -163,38 +163,35 @@ export default function ReferralPage() {
           </div>
         </section>
 
-        {/* 2. 사인업 레벨 진행바 카드 (LV0 -> LV1(1명) -> LV3(3명) -> LV10(10명)) */}
+        {/* 2. 사인업 레벨 진행바 카드 (Lv.0 -> Lv.1 -> Lv.3, 최대치 3명 기준 100%) */}
         <section className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)] mb-3 text-left">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-extrabold text-[#2C2F63]">
-              사인업 LV{levelInfo.rawLevel}
+              사인업 {levelInfo.stageLabel}
             </span>
             <span className="text-[11px] font-bold text-[#2C2F63]/75">
               {levelInfo.nextTierTarget !== null
-                ? `LV${levelInfo.nextTierTarget}까지 ${levelInfo.remainingToNext}명`
-                : "최고 단계(LV10) 달성!"}
+                ? `Lv.${levelInfo.nextTierTarget}까지 ${levelInfo.remainingToNext}명`
+                : "최고 단계(Lv.3) 달성!"}
             </span>
           </div>
 
-          <div className="w-full h-2 rounded-full bg-[#E8ECFA] overflow-hidden mb-2">
+          <div className="w-full h-2.5 rounded-full bg-[#E8ECFA] overflow-hidden mb-2">
             <div
               className="h-full rounded-full bg-[#2C2F63] transition-all duration-500"
               style={{ width: `${levelInfo.progressPercent}%` }}
             />
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] font-bold text-[#2C2F63]/65 mb-2">
+          <div className="flex items-center justify-between text-[10px] font-bold text-[#2C2F63]/65 mb-2">
             <span className={levelInfo.rawLevel >= 0 ? "text-[#2C2F63] font-extrabold" : ""}>
-              LV0
+              Lv.0
             </span>
             <span className={levelInfo.rawLevel >= 1 ? "text-[#2C2F63] font-extrabold" : ""}>
-              LV1 · 1명
+              Lv.1
             </span>
             <span className={levelInfo.rawLevel >= 3 ? "text-[#2C2F63] font-extrabold" : ""}>
-              LV3 · 3명
-            </span>
-            <span className={levelInfo.rawLevel >= 10 ? "text-[#2C2F63] font-extrabold" : ""}>
-              LV10 · 10명
+              Lv.3
             </span>
           </div>
 
@@ -203,7 +200,7 @@ export default function ReferralPage() {
           </p>
         </section>
 
-        {/* 3. 업그레이드 미리보기 카드 (Lv.1 / Lv.3 / Lv.10) */}
+        {/* 3. 업그레이드 미리보기 카드 (Lv.0 민트 / Lv.1 핑크 / Lv.3 골드) */}
         <section className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)] mb-3 text-left">
           <h2 className="text-xs font-extrabold text-[#2C2F63] mb-3">
             업그레이드 미리보기
@@ -213,18 +210,18 @@ export default function ReferralPage() {
             {[
               {
                 img: "/lv0_snowball.png",
+                title: "Lv.0",
+                reached: levelInfo.rawLevel >= 0,
+              },
+              {
+                img: "/lv1_snowball.png",
                 title: "Lv.1",
                 reached: levelInfo.rawLevel >= 1,
               },
               {
-                img: "/lv1_snowball.png",
+                img: "/lv3_snowball.png",
                 title: "Lv.3",
                 reached: levelInfo.rawLevel >= 3,
-              },
-              {
-                img: "/lv3_snowball.png",
-                title: "Lv.10",
-                reached: levelInfo.rawLevel >= 10,
               },
             ].map((item) => (
               <div key={item.title} className="flex flex-col items-center">

@@ -50,65 +50,6 @@ button,
   letter-spacing: -0.015em;
 }
 
-/* ============================================================================
- * 스노우볼 유리구슬 내부 손그림 불투명 눈송이 애니메이션 & 흔들기 모션
- * - 투명도(opacity) 변화나 빛 번짐(blur/glow) 없이 100% 불투명(#FFFFFF) 유지
- * ========================================================================== */
-
-/* 1단계: 평상시(Idle) 위에서 아래로 잔잔하고 포근하게 살랑거리며 내려오는 모션 */
-@keyframes snowballIdleFall {
-  0% {
-    transform: translate3d(0, -14px, 0) rotate(var(--snow-rot-start, 0deg));
-  }
-  25% {
-    transform: translate3d(var(--snow-sway, 7px), 52px, 0)
-      rotate(calc(var(--snow-rot-start, 0deg) + 25deg));
-  }
-  50% {
-    transform: translate3d(calc(var(--snow-sway, 7px) * -0.6), 112px, 0)
-      rotate(calc(var(--snow-rot-start, 0deg) - 18deg));
-  }
-  75% {
-    transform: translate3d(calc(var(--snow-sway, 7px) * 0.8), 172px, 0)
-      rotate(calc(var(--snow-rot-start, 0deg) + 15deg));
-  }
-  100% {
-    transform: translate3d(0, 232px, 0) rotate(var(--snow-rot-end, 45deg));
-  }
-}
-
-/* 2단계: 흔들었을 때(Shake) 작은 불투명 눈송이 크기는 그대로 유지한 채
-   상하좌우 대각선 이리저리 자유롭게 소용돌이치며 흩날리다가 서서히 가라앉는 물리 모션 */
-@keyframes snowballShakeSwirl {
-  0% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-  14% {
-    transform: translate3d(var(--dx1, -28px), var(--dy1, -34px), 0)
-      rotate(45deg);
-  }
-  30% {
-    transform: translate3d(var(--dx2, 32px), var(--dy2, 18px), 0)
-      rotate(-50deg);
-  }
-  46% {
-    transform: translate3d(var(--dx3, -24px), var(--dy3, 28px), 0)
-      rotate(65deg);
-  }
-  64% {
-    transform: translate3d(var(--dx4, 18px), var(--dy4, -16px), 0)
-      rotate(-30deg);
-  }
-  82% {
-    transform: translate3d(calc(var(--dx4, 18px) * 0.4), 22px, 0)
-      rotate(15deg);
-  }
-  100% {
-    transform: translate3d(var(--dx-end, 4px), var(--dy-end, 48px), 0)
-      rotate(0deg);
-  }
-}
-
 /* 흔들기 클릭 시 스노우볼 전체가 좌우/상하로 경쾌하게 흔들리는 모션 */
 @keyframes snowballGlobeShake {
   0%,

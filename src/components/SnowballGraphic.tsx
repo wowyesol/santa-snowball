@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Letter, getSnowballLevelInfo } from "@/lib/supabase";
 
 interface SnowballGraphicProps {
@@ -12,102 +12,32 @@ interface SnowballGraphicProps {
   size?: "md" | "lg";
 }
 
-interface IdleFlake {
-  id: number;
-  left: string;
-  widthPx: number;
-  heightPx: number;
-  borderRadius: string;
-  durationSec: number;
-  delaySec: number;
-  swayPx: number;
-  rotStart: number;
-  rotEnd: number;
+interface SnowParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  baseVy: number;
+  rx: number; // 가로 반지름 (지름 1.5px ~ 3.2px -> 반지름 0.75px ~ 1.6px)
+  ry: number; // 세로 반지름 (살짝 찌그러진 비대칭 손그림 점 비율)
+  rot: number; // 회전 각도 (rad)
+  rotSpeed: number;
+  phase: number;
+  freq: number;
+  amp: number;
+  lobeFactor: number; // 조약돌 형태의 미세 비대칭 계수
 }
 
-interface SwirlFlake {
-  id: number;
-  left: string;
-  top: string;
-  widthPx: number;
-  heightPx: number;
-  borderRadius: string;
-  dx1: number;
-  dy1: number;
-  dx2: number;
-  dy2: number;
-  dx3: number;
-  dy3: number;
-  dx4: number;
-  dy4: number;
-  dxEnd: number;
-  dyEnd: number;
-}
-
-// 손그림 크레용/조약돌 느낌의 비정형 테두리(border-radius) 패턴 목록
-const PEBBLE_RADII = [
-  "58% 42% 63% 37% / 45% 55% 45% 55%",
-  "44% 56% 39% 61% / 57% 41% 59% 43%",
-  "64% 36% 52% 48% / 42% 62% 38% 58%",
-  "49% 51% 62% 38% / 63% 44% 56% 37%",
-  "37% 63% 55% 45% / 48% 54% 46% 52%",
-  "61% 39% 44% 56% / 53% 38% 62% 47%",
-];
-
-// [1단계: 평상시 기본 상태 (Idle)]
-// 빛 번짐(glow)이나 투명도 변화 없이 100% 불투명한 순백색(#FFFFFF) 작은 크레용 눈송이 조각(3.5~5.5px)이
-// 유리구슬 안에서 잔잔하고 포근하게 살랑거리며 내려오는 데이터
-const IDLE_FLAKES: IdleFlake[] = Array.from({ length: 18 }, (_, i) => {
-  const baseW = 3.5 + (i % 3) * 0.9; // 3.5px ~ 5.3px
-  const baseH = 3.2 + ((i + 1) % 3) * 0.85; // 살짝 비대칭 조약돌 비율
-  return {
-    id: i,
-    left: `${9 + ((i * 17) % 80)}%`,
-    widthPx: Number(baseW.toFixed(1)),
-    heightPx: Number(baseH.toFixed(1)),
-    borderRadius: PEBBLE_RADII[i % PEBBLE_RADII.length],
-    durationSec: 5.8 + ((i * 7) % 36) / 10, // 5.8s ~ 9.3s
-    delaySec: -((i * 1.15) % 8.2), // 진입 즉시 구슬 전체에 고르게 분포
-    swayPx: (i % 2 === 0 ? 1 : -1) * (5 + (i % 6)),
-    rotStart: (i * 23) % 90 - 45,
-    rotEnd: ((i * 23) % 90 - 45) + (i % 2 === 0 ? 40 : -40),
-  };
-});
-
-// [2단계: 흔들었을 때 (Shake)]
-// 평소의 작은 불투명 눈송이 크기(3.5~5.3px)와 조약돌 모양을 그대로 유지한 채,
-// 개수가 풍성해지며 상하좌우·대각선으로 자유롭게 소용돌이치듯 흩날리다가 서서히 가라앉는 데이터
-const SWIRL_FLAKES: SwirlFlake[] = Array.from({ length: 40 }, (_, i) => {
-  const baseW = 3.5 + (i % 3) * 0.9;
-  const baseH = 3.2 + ((i + 2) % 3) * 0.85;
-  const dirX = i % 2 === 0 ? 1 : -1;
-  const dirY = i % 3 === 0 ? -1 : 1;
-  return {
-    id: i,
-    left: `${12 + ((i * 19) % 76)}%`,
-    top: `${12 + ((i * 23) % 68)}%`,
-    widthPx: Number(baseW.toFixed(1)),
-    heightPx: Number(baseH.toFixed(1)),
-    borderRadius: PEBBLE_RADII[(i + 2) % PEBBLE_RADII.length],
-    dx1: dirX * (22 + ((i * 11) % 32)),
-    dy1: -1 * (18 + ((i * 13) % 34)), // 흔드는 순간 위로 솟구치며 확산
-    dx2: -dirX * (20 + ((i * 17) % 36)),
-    dy2: dirY * (16 + ((i * 7) % 28)),
-    dx3: dirX * (16 + ((i * 13) % 28)),
-    dy3: -dirY * (14 + ((i * 9) % 24)),
-    dx4: -dirX * (10 + ((i * 7) % 18)),
-    dy4: 12 + (i % 16),
-    dxEnd: dirX * (4 + (i % 8)),
-    dyEnd: 36 + ((i * 5) % 28), // 마지막에 잔잔하게 아래로 가라앉음
-  };
-});
+const PARTICLE_COUNT = 105;
 
 /**
  * 스노우볼 중앙 그래픽 컴포넌트 (S01, S04, S05, S10 공통 적용)
- * - public/ 폴더에 저장된 새 크레용 동화 스노우볼 일러스트(lv0, lv1, lv3)를 렌더링합니다.
- * - 선물 상자 아이콘 중첩 표시를 완전히 제거하여 일러스트 본연의 감성을 깔끔하게 유지합니다.
- * - 유리구슬 내부 원형 마스크 영역 안에서 100% 불투명(#FFFFFF) 비정형 조약돌 모양 눈송이가
- *   평소에는 잔잔하게 내리고, 흔들었을 때는 같은 크기의 작은 눈송이들이 사방으로 휘날리다 가라앉습니다.
+ * 1) 스노우볼 크기 대폭 확대: 모바일(360~430px)에서 중심 오브젝트로 꽉 차게 보이도록 w-[82vw] max-w-[320px] 적용
+ * 2) <canvas> + requestAnimationFrame 기반 무작위(Random) 물리 눈송이 엔진:
+ *    - 지름 1.5px ~ 3.2px 수준의 아주 작은 100% 불투명 순백색(#FFFFFF) 비정형 손그림 점 105개
+ *    - 평소: 미세한 좌우 랜덤 노이즈와 함께 잔잔하게 낙하
+ *    - 흔들었을 때(isShaking): 모든 입자에 각각 완전히 다른 무작위 각도·속도의 초기 가속도(vx, vy) 및
+ *      프레임별 미세 난류(random jitter)를 부여해 사방으로 흩날리다가 서서히 감속하며 잔잔한 낙하로 복귀
  */
 export default function SnowballGraphic({
   level = 0,
@@ -119,10 +49,225 @@ export default function SnowballGraphic({
   const levelInfo = getSnowballLevelInfo(level);
   const imgSrc = overrideImageSrc || levelInfo.imageSrc;
 
-  const widthClass = size === "lg" ? "w-[254px]" : "w-[196px]";
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isShakingRef = useRef<boolean>(isShaking);
+  const shakeEnergyRef = useRef<number>(0);
+
+  // isShaking 상태가 true로 바뀔 때마다 각 입자에 무작위 폭발 가속도 트리거 신호 전달
+  const triggerBurstRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (isShaking && !isShakingRef.current) {
+      triggerBurstRef.current = true;
+      shakeEnergyRef.current = 1.0;
+    }
+    isShakingRef.current = isShaking;
+  }, [isShaking]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationFrameId = 0;
+    let width = 260;
+    let height = 260;
+    let centerX = 130;
+    let centerY = 130;
+    let globeRadius = 126;
+
+    const createParticle = (randomY = true): SnowParticle => {
+      // 지름 1.5px ~ 3.2px -> 반지름 0.75px ~ 1.6px
+      const diameter = 1.5 + Math.random() * 1.7;
+      const baseRadius = diameter * 0.5;
+      // 정원이 아닌 살짝 찌그러진 손그림 점 형태 (비대칭 rx, ry)
+      const stretch = 0.76 + Math.random() * 0.48;
+      const rx = baseRadius * stretch;
+      const ry = baseRadius * (2 - stretch);
+
+      // 원형 유리구 내부에 고르게 분포하도록 극좌표/직교좌표 생성
+      let x = centerX;
+      let y = centerY;
+      if (randomY) {
+        const r = Math.sqrt(Math.random()) * (globeRadius - 4);
+        const theta = Math.random() * Math.PI * 2;
+        x = centerX + Math.cos(theta) * r;
+        y = centerY + Math.sin(theta) * r;
+      } else {
+        // 상단에서 새로 내려오는 입자
+        const spreadX = (Math.random() * 2 - 1) * (globeRadius * 0.88);
+        x = centerX + spreadX;
+        const maxTopY =
+          centerY -
+          Math.sqrt(Math.max(0, globeRadius * globeRadius - spreadX * spreadX));
+        y = maxTopY + 2 + Math.random() * 10;
+      }
+
+      return {
+        x,
+        y,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: 0.22 + Math.random() * 0.36,
+        baseVy: 0.22 + Math.random() * 0.36,
+        rx,
+        ry,
+        rot: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.03,
+        phase: Math.random() * Math.PI * 2,
+        freq: 0.015 + Math.random() * 0.025,
+        amp: 0.12 + Math.random() * 0.22,
+        lobeFactor: (Math.random() - 0.5) * 0.28,
+      };
+    };
+
+    const particles: SnowParticle[] = [];
+
+    const updateCanvasSize = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        width = rect.width;
+        height = rect.height;
+      }
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      centerX = width * 0.5;
+      centerY = height * 0.5;
+      globeRadius = Math.min(width, height) * 0.5 - 2;
+    };
+
+    updateCanvasSize();
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(createParticle(true));
+    }
+
+    const handleResize = () => {
+      updateCanvasSize();
+    };
+    window.addEventListener("resize", handleResize);
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      // 흔들기 시작 순간: 모든 입자에 완전히 다른 무작위 각도와 속도의 초기 가속도 부여
+      if (triggerBurstRef.current) {
+        triggerBurstRef.current = false;
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 3.2 + Math.random() * 6.8;
+          p.vx = Math.cos(angle) * speed;
+          p.vy = Math.sin(angle) * speed - Math.random() * 1.8;
+          p.rotSpeed = (Math.random() - 0.5) * 0.14;
+        }
+      }
+
+      const energy = shakeEnergyRef.current;
+      if (energy > 0.005) {
+        // 흔들리는 동안 서서히 에너지가 감쇠 (약 1.8초 동안 활발히 흩날린 뒤 안착)
+        shakeEnergyRef.current *= 0.968;
+      } else {
+        shakeEnergyRef.current = 0;
+      }
+
+      // 블러·빛번짐·투명도 없이 100% 불투명한 순백색(#FFFFFF) 고정
+      ctx.fillStyle = "#FFFFFF";
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.phase += p.freq;
+
+        if (energy > 0.02) {
+          // 흔들리는 상태: 프레임별 무작위 난류(random jitter) + 공기 저항 감속
+          p.vx += (Math.random() - 0.5) * 1.45 * energy;
+          p.vy += (Math.random() - 0.5) * 1.45 * energy;
+          p.vx *= 0.945;
+          p.vy = p.vy * 0.945 + p.baseVy * (1 - energy) * 0.06;
+        } else {
+          // 평소 상태: 미세한 좌우 랜덤 노이즈 + 잔잔한 낙하 속도로 자연스럽게 수렴
+          const targetVx =
+            Math.sin(p.phase) * p.amp + (Math.random() - 0.5) * 0.08;
+          p.vx += (targetVx - p.vx) * 0.08;
+          p.vy += (p.baseVy - p.vy) * 0.06 + (Math.random() - 0.5) * 0.02;
+          p.rotSpeed *= 0.98;
+        }
+
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.rotSpeed;
+
+        // 유리구 원형 경계 충돌 및 순환 처리
+        const dx = p.x - centerX;
+        const dy = p.y - centerY;
+        const distSq = dx * dx + dy * dy;
+        const maxR = globeRadius - 2;
+
+        if (distSq > maxR * maxR) {
+          if (energy > 0.08) {
+            // 흔들리는 중에는 유리구 벽면을 타고 안쪽으로 무작위 각도로 튕겨 들어옴
+            const dist = Math.sqrt(distSq) || 1;
+            const nx = dx / dist;
+            const ny = dy / dist;
+            p.x = centerX + nx * (maxR - 1.5);
+            p.y = centerY + ny * (maxR - 1.5);
+
+            const dot = p.vx * nx + p.vy * ny;
+            const scatter = (Math.random() - 0.5) * 0.9;
+            const rvx = (p.vx - 1.75 * dot * nx) * 0.72;
+            const rvy = (p.vy - 1.75 * dot * ny) * 0.72;
+            p.vx = rvx * Math.cos(scatter) - rvy * Math.sin(scatter);
+            p.vy = rvx * Math.sin(scatter) + rvy * Math.cos(scatter);
+          } else {
+            // 평소 상태에서는 바닥에 닿은 눈송이를 유리구 상단 랜덤 위치로 재배치
+            const respawned = createParticle(false);
+            p.x = respawned.x;
+            p.y = respawned.y;
+            p.vx = respawned.vx;
+            p.vy = respawned.baseVy;
+          }
+        }
+
+        // 살짝 찌그러진 비정형 손그림 조약돌 점 그리기 (100% 불투명 #FFFFFF)
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, p.rx, p.ry, 0, 0, Math.PI * 2);
+        // 미세한 비대칭 보조 원을 살짝 겹쳐 정원이 아닌 손그림 크레용 점 질감 구현
+        ctx.ellipse(
+          p.rx * p.lobeFactor,
+          p.ry * p.lobeFactor,
+          p.rx * 0.85,
+          p.ry * 0.88,
+          0.4,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.restore();
+      }
+
+      animationFrameId = window.requestAnimationFrame(render);
+    };
+
+    animationFrameId = window.requestAnimationFrame(render);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  const widthClass =
+    size === "lg"
+      ? "w-[82vw] max-w-[320px] sm:w-[320px]"
+      : "w-[68vw] max-w-[240px] sm:w-[240px]";
 
   return (
-    <div className="relative flex flex-col items-center justify-center my-2 select-none">
+    <div className="relative flex flex-col items-center justify-center my-1 select-none">
       {showShakeBadge && (
         <div className="mb-1.5 px-3 py-0.5 rounded-full bg-[#2C2F63] border border-white/25 text-white text-[10px] font-extrabold shadow-sm">
           흔들림 모션
@@ -139,69 +284,15 @@ export default function SnowballGraphic({
         <img
           src={imgSrc}
           alt={levelInfo.tierLabel}
-          className="w-full h-auto object-contain drop-shadow-[0_12px_24px_rgba(26,30,67,0.35)]"
+          className="w-full h-auto object-contain drop-shadow-[0_14px_28px_rgba(26,30,67,0.36)]"
         />
 
-        {/* ================================================================
-            동그란 유리구슬 영역 내부 원형 마스크 레이어
-            하단 우체통 받침대(POST) 밖으로는 눈이 절대 삐져나가지 않도록 마스킹
-           ================================================================ */}
+        {/* 유리구슬 내부 원형 마스크 영역에만 작동하는 무작위 물리 눈송이 캔버스 */}
         <div
           className="absolute top-[4%] left-[11%] w-[78%] aspect-square rounded-full overflow-hidden pointer-events-none z-10"
           aria-hidden="true"
         >
-          {/* 1단계: 평상시(Idle) 상시 살랑살랑 내리는 100% 불투명 손그림 눈송이 조각 */}
-          {IDLE_FLAKES.map((flake) => (
-            <span
-              key={`idle-${flake.id}`}
-              style={
-                {
-                  left: flake.left,
-                  top: "-6%",
-                  width: `${flake.widthPx}px`,
-                  height: `${flake.heightPx}px`,
-                  borderRadius: flake.borderRadius,
-                  backgroundColor: "#FFFFFF",
-                  "--snow-sway": `${flake.swayPx}px`,
-                  "--snow-rot-start": `${flake.rotStart}deg`,
-                  "--snow-rot-end": `${flake.rotEnd}deg`,
-                  animation: `snowballIdleFall ${flake.durationSec}s linear ${flake.delaySec}s infinite`,
-                } as React.CSSProperties
-              }
-              className="absolute block"
-            />
-          ))}
-
-          {/* 2단계: 흔들기 클릭 상태(isShaking)일 때 동일한 작은 불투명 눈송이들이 사방으로 휘날리다 가라앉음 */}
-          {isShaking &&
-            SWIRL_FLAKES.map((flake) => (
-              <span
-                key={`swirl-${flake.id}`}
-                style={
-                  {
-                    left: flake.left,
-                    top: flake.top,
-                    width: `${flake.widthPx}px`,
-                    height: `${flake.heightPx}px`,
-                    borderRadius: flake.borderRadius,
-                    backgroundColor: "#FFFFFF",
-                    "--dx1": `${flake.dx1}px`,
-                    "--dy1": `${flake.dy1}px`,
-                    "--dx2": `${flake.dx2}px`,
-                    "--dy2": `${flake.dy2}px`,
-                    "--dx3": `${flake.dx3}px`,
-                    "--dy3": `${flake.dy3}px`,
-                    "--dx4": `${flake.dx4}px`,
-                    "--dy4": `${flake.dy4}px`,
-                    "--dx-end": `${flake.dxEnd}px`,
-                    "--dy-end": `${flake.dyEnd}px`,
-                    animation:
-                      "snowballShakeSwirl 1.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards",
-                  } as React.CSSProperties
-                }
-                className="absolute block"
-              />
-            ))}
+          <canvas ref={canvasRef} className="w-full h-full block" />
         </div>
       </div>
     </div>

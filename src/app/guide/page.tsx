@@ -159,12 +159,12 @@ export default function GuidePage() {
               내 Gemini 가입 인증(+1)과 내가 추천한 친구의 가입 인증(+1/명)이 쌓일 때마다 사인업 레벨이 올라가고 스노우볼 디자인이 업그레이드돼요.
             </p>
 
-            {/* 3단계 스노우볼 이미지 미리보기 */}
+            {/* 3단계 스노우볼 이미지 미리보기 (Lv.0 민트 / Lv.1 핑크 / Lv.3 골드) */}
             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
               {[
-                { lv: "Lv.1", name: "기본 스노우볼", img: "/lv0_snowball.png" },
-                { lv: "Lv.3", name: "리본 스노우볼", img: "/lv1_snowball.png" },
-                { lv: "Lv.10", name: "황금 스노우볼", img: "/lv3_snowball.png" },
+                { lv: "Lv.0", name: "민트 스노우볼", img: "/lv0_snowball.png" },
+                { lv: "Lv.1", name: "핑크 스노우볼", img: "/lv1_snowball.png" },
+                { lv: "Lv.3", name: "골드 스노우볼", img: "/lv3_snowball.png" },
               ].map((item) => (
                 <div
                   key={item.lv}

@@ -32,21 +32,11 @@ const SUB_ROUTES = new Set([
   "/guide",
 ]);
 
-// 밤하늘 상단 영역에 100% 불투명(#FFFFFF) 비정형 조약돌 모양으로 찍히는 손그림 눈송이 점
-const SKY_CRAYON_FLAKES = [
-  { top: "88px", left: "26px", w: 4, h: 3.5, radius: "58% 42% 63% 37% / 45% 55% 45% 55%", rot: 12 },
-  { top: "142px", right: "34px", w: 4.5, h: 4, radius: "44% 56% 39% 61% / 57% 41% 59% 43%", rot: -18 },
-  { top: "238px", left: "18px", w: 3.5, h: 4, radius: "64% 36% 52% 48% / 42% 62% 38% 58%", rot: 25 },
-  { top: "310px", right: "22px", w: 4, h: 3.5, radius: "49% 51% 62% 38% / 63% 44% 56% 37%", rot: -10 },
-  { top: "415px", left: "32px", w: 4.5, h: 3.5, radius: "37% 63% 55% 45% / 48% 54% 46% 52%", rot: 16 },
-  { top: "485px", right: "28px", w: 3.5, h: 3.5, radius: "61% 39% 44% 56% / 53% 38% 62% 47%", rot: -22 },
-];
-
 /**
  * 공통 모바일 웹 프레임 (390px 표준, 최대 430px 중앙 정렬)
- * - 크레용 동화 일러스트 배경 (/bg-night-snow.png):
- *   상단 진한 밤하늘(#1A1E43) ~ 하단 따뜻한 크림빛 눈언덕(#FAF0DC)으로 자연스럽게 이어지도록 구성
- * - 하단 흰 눈밭(#FAF0DC) 영역 위에 놓이는 푸터 및 보조 텍스트는 모두 짙은 남색(#2C2F63)으로 대비 확보
+ * - 새 배경 이미지 (/bg-night-snow.png?v=2)는 무조건 화면 최상단에 원본 비율 그대로 고정 (bg-top bg-no-repeat bg-[length:100%_auto])
+ * - 스크롤이 길어지거나 이미지 아래쪽으로 이어지는 모든 하단 배경 영역은 #FCEED8 단색으로 채워 경계선 없이 자연스럽게 연장
+ * - 하단 #FCEED8 밝은 눈밭 영역 위의 텍스트 및 푸터는 짙은 남색(#2C2F63) 계열로 선명한 가독성 확보
  */
 export default function AppShell({
   children,
@@ -145,10 +135,10 @@ export default function AppShell({
   };
 
   return (
-    <div className="relative w-full max-w-[430px] mx-auto flex flex-col bg-[#1A1E43] text-white shadow-2xl overflow-x-hidden">
+    <div className="relative w-full max-w-[430px] mx-auto flex flex-col bg-[#FCEED8] text-white shadow-2xl overflow-x-hidden">
       {/* 전역 토스트 알림 */}
       {toastMsg && (
-        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-[80] w-[90%] max-w-[360px] px-4 py-3 rounded-2xl bg-[#2C2F63] border border-[#FAF0DC]/60 text-white text-xs font-extrabold text-center shadow-2xl animate-bounce">
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-[80] w-[90%] max-w-[360px] px-4 py-3 rounded-2xl bg-[#2C2F63] border border-[#FCEED8]/60 text-white text-xs font-extrabold text-center shadow-2xl animate-bounce">
           ⚠️ {toastMsg}
         </div>
       )}
@@ -183,14 +173,14 @@ export default function AppShell({
           {auth?.snowball ? (
             <Link
               href="/raffle"
-              className="px-3 py-1 rounded-full bg-[#FAF0DC] text-[#2C2F63] text-[11px] font-extrabold shadow-xs hover:bg-white transition-colors shrink-0"
+              className="px-3 py-1 rounded-full bg-[#FCEED8] text-[#2C2F63] text-[11px] font-extrabold shadow-xs hover:bg-white transition-colors shrink-0"
             >
               응모권 {ticketBadgeCount}장
             </Link>
           ) : (
             <Link
               href="/guide"
-              className="px-3 py-1 rounded-full bg-[#FAF0DC] text-[#2C2F63] text-[11px] font-extrabold shadow-xs hover:bg-white transition-colors shrink-0"
+              className="px-3 py-1 rounded-full bg-[#FCEED8] text-[#2C2F63] text-[11px] font-extrabold shadow-xs hover:bg-white transition-colors shrink-0"
             >
               이벤트 안내
             </Link>
@@ -199,49 +189,27 @@ export default function AppShell({
 
         {/* 2) 마감 안내 띠 배너 (#2C2F63 크레용 남색 톤) */}
         {!hideDeadlineBanner && (
-          <div className="w-full bg-[#2C2F63] text-[#FAF0DC] text-center py-2 px-3 text-[11px] font-extrabold tracking-tight border-b border-white/10 shadow-xs">
+          <div className="w-full bg-[#2C2F63] text-[#FCEED8] text-center py-2 px-3 text-[11px] font-extrabold tracking-tight border-b border-white/10 shadow-xs">
             11.28 당첨자 공개 · 12.1 편지 공개
           </div>
         )}
 
         {/* 3) 본문 컨텐츠 영역:
-            상단 #1A1E43 단색에서 시작해 하단 /bg-night-snow.png 눈언덕(#FAF0DC)으로 자연스럽게 이어짐 */}
+            /bg-night-snow.png?v=2 이미지를 화면 최상단에 원본 비율 그대로 고정(bg-top bg-no-repeat bg-[length:100%_auto])하고,
+            이미지 아래로 이어지는 하단 영역은 #FCEED8 단색으로 경계선 없이 자연스럽게 연장 */}
         <main
-          className="relative flex flex-col min-h-[700px] bg-[#1A1E43] bg-bottom bg-no-repeat bg-[length:100%_auto]"
+          className="relative flex flex-col min-h-[700px] bg-[#FCEED8] bg-top bg-no-repeat bg-[length:100%_auto]"
           style={{
-            backgroundImage: "url('/bg-night-snow.png')",
+            backgroundImage: "url('/bg-night-snow.png?v=2')",
           }}
         >
-          {/* 밤하늘 상단 영역 100% 불투명(#FFFFFF) 비정형 손그림 눈송이 조각 */}
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-[520px] overflow-hidden"
-            aria-hidden="true"
-          >
-            {SKY_CRAYON_FLAKES.map((flake, idx) => (
-              <span
-                key={idx}
-                style={{
-                  top: flake.top,
-                  left: flake.left,
-                  right: flake.right,
-                  width: `${flake.w}px`,
-                  height: `${flake.h}px`,
-                  borderRadius: flake.radius,
-                  backgroundColor: "#FFFFFF",
-                  transform: `rotate(${flake.rot}deg)`,
-                }}
-                className="absolute block"
-              />
-            ))}
-          </div>
-
           <div className="relative z-10 flex flex-col flex-1">{children}</div>
         </main>
       </div>
 
-      {/* 하단 공통 푸터: 눈언덕 하단 컬러(#FAF0DC)와 자연스럽게 이어지며 짙은 남색(#2C2F63) 텍스트로 가독성 확보 */}
+      {/* 하단 공통 푸터: 눈밭 단색(#FCEED8)과 경계선 없이 이어지며 짙은 남색(#2C2F63) 텍스트로 가독성 확보 */}
       {!hideFooter && (
-        <footer className="relative z-10 w-full bg-[#FAF0DC] text-[#2C2F63] pt-3 pb-7 px-4 flex flex-col items-center text-center gap-2">
+        <footer className="relative z-10 w-full bg-[#FCEED8] text-[#2C2F63] pt-3 pb-7 px-4 flex flex-col items-center text-center gap-2">
           <div className="inline-flex items-center gap-1 px-4 py-1 rounded-full bg-white/90 border border-[#2C2F63]/20 text-[11px] font-extrabold text-[#2C2F63] shadow-2xs">
             <span>Built with</span>
             <span className="text-[#2C2F63] underline decoration-[#2C2F63]/40">

@@ -281,8 +281,8 @@ export default function VerifyPage() {
       )}
 
       <div className="flex flex-col px-5 pt-6 pb-12 break-keep">
-        {/* 상단 타이틀 및 상태 뱃지 */}
-        <div className="text-center mb-5">
+        {/* 상단 타이틀 및 상태 뱃지 (수평·수직 정중앙 정렬) */}
+        <div className="flex flex-col items-center justify-center text-center mb-5">
           <h1 className="text-2xl font-extrabold text-white tracking-tight mb-1.5">
             Gemini 가입 인증
           </h1>
@@ -293,7 +293,7 @@ export default function VerifyPage() {
           </p>
 
           <span
-            className={`inline-block px-3 py-0.5 rounded-full text-[11px] font-bold border ${
+            className={`inline-flex items-center justify-center px-3.5 py-1 rounded-full text-[11px] font-extrabold leading-none text-center border ${
               isApproved
                 ? "bg-amber-400/25 border-amber-300 text-amber-200"
                 : isPending

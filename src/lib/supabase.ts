@@ -99,18 +99,19 @@ export interface GeminiVerification {
 }
 
 /**
- * 스노우볼 레벨 시스템 (LV 0 → LV 1 → LV 3 → LV 10)
- * - LV 0 (level === 0): 회색 받침대 (/lv0_snowball.png)
- * - LV 1 ~ 2 (1 <= level < 3): 파란색 받침대 (/lv1_snowball.png)
- * - LV 3 ~ 9 (3 <= level < 10): 빨간색 받침대 (/lv3_Snowball.png)
- * - LV 10 이상 (level >= 10): 황금색 받침대 (/lv10_snowball.png)
+ * 스노우볼 3단계 레벨 시스템 (Lv.0 민트 → Lv.1 핑크 → Lv.3 골드)
+ * - Lv.0 (사인업 0명, 기본): 민트 스노우볼 (/lv0_snowball.png), 우편함 배경 #C0EEE8
+ * - Lv.1 (사인업 1~2명): 핑크 스노우볼 (/lv1_snowball.png), 우편함 배경 #FBD0D8
+ * - Lv.3 (사인업 3명 이상, 최대 단계): 골드 스노우볼 (/lv3_snowball.png), 우편함 배경 #FAEBBF
  */
 export interface SnowballLevelInfo {
   rawLevel: number;
-  tier: 0 | 1 | 3 | 10;
+  tier: 0 | 1 | 3;
+  stageLabel: "Lv.0" | "Lv.1" | "Lv.3";
   tierLabel: string;
   shortBadge: string;
   baseColorName: string;
+  mailboxBgHex: "#C0EEE8" | "#FBD0D8" | "#FAEBBF";
   imageSrc: string;
   nextTierTarget: number | null;
   remainingToNext: number;
@@ -121,14 +122,18 @@ export function getSnowballLevelInfo(
   levelInput?: number | null
 ): SnowballLevelInfo {
   const rawLevel = Math.max(0, Number(levelInput) || 0);
+  // 최대치(100% 게이지)를 3명 기준으로 계산 (0명=0%, 1명=33%, 2명=67%, 3명 이상=100%)
+  const progressPercent = Math.min(100, Math.round((rawLevel / 3) * 100));
 
-  if (rawLevel >= 10) {
+  if (rawLevel >= 3) {
     return {
       rawLevel,
-      tier: 10,
-      tierLabel: "업그레이드 3단계 · LV10",
-      shortBadge: "LV10 · 황금 받침대",
-      baseColorName: "황금색 받침대",
+      tier: 3,
+      stageLabel: "Lv.3",
+      tierLabel: "최고 단계 · Lv.3",
+      shortBadge: "Lv.3 · 골드 스노우볼",
+      baseColorName: "골드 스노우볼",
+      mailboxBgHex: "#FAEBBF",
       imageSrc: "/lv3_snowball.png",
       nextTierTarget: null,
       remainingToNext: 0,
@@ -136,48 +141,34 @@ export function getSnowballLevelInfo(
     };
   }
 
-  if (rawLevel >= 3) {
-    // LV3(3명) ~ LV10(10명) 구간 진행률 (66% ~ 100%)
-    const ratio = (rawLevel - 3) / (10 - 3);
-    return {
-      rawLevel,
-      tier: 3,
-      tierLabel: "업그레이드 2단계 · LV3",
-      shortBadge: "LV3 · 빨강 받침대",
-      baseColorName: "빨간색 받침대",
-      imageSrc: "/lv3_snowball.png",
-      nextTierTarget: 10,
-      remainingToNext: 10 - rawLevel,
-      progressPercent: Math.min(98, Math.round(66 + ratio * 34)),
-    };
-  }
-
   if (rawLevel >= 1) {
-    // LV1(1명) ~ LV3(3명) 구간 진행률 (33% ~ 66%)
-    const ratio = (rawLevel - 1) / (3 - 1);
     return {
       rawLevel,
       tier: 1,
-      tierLabel: "업그레이드 1단계 · LV1",
-      shortBadge: "LV1 · 파랑 받침대",
-      baseColorName: "파란색 받침대",
+      stageLabel: "Lv.1",
+      tierLabel: "업그레이드 · Lv.1",
+      shortBadge: "Lv.1 · 핑크 스노우볼",
+      baseColorName: "핑크 스노우볼",
+      mailboxBgHex: "#FBD0D8",
       imageSrc: "/lv1_snowball.png",
       nextTierTarget: 3,
       remainingToNext: 3 - rawLevel,
-      progressPercent: Math.round(33 + ratio * 33),
+      progressPercent,
     };
   }
 
   return {
     rawLevel: 0,
     tier: 0,
-    tierLabel: "기본형 · LV0",
-    shortBadge: "LV0 · 회색 받침대",
-    baseColorName: "회색 받침대",
+    stageLabel: "Lv.0",
+    tierLabel: "기본 · Lv.0",
+    shortBadge: "Lv.0 · 민트 스노우볼",
+    baseColorName: "민트 스노우볼",
+    mailboxBgHex: "#C0EEE8",
     imageSrc: "/lv0_snowball.png",
     nextTierTarget: 1,
     remainingToNext: 1,
-    progressPercent: 8,
+    progressPercent: 0,
   };
 }
 
