@@ -30,15 +30,15 @@ interface SnowParticle {
   lobeFactor: number;
 }
 
-const IDLE_PARTICLE_COUNT = 95;
-const RESERVE_PARTICLE_COUNT = 115;
+const IDLE_PARTICLE_COUNT = 100;
+const RESERVE_PARTICLE_COUNT = 120;
 
 /**
  * 스노우볼 중앙 그래픽 컴포넌트 (S01, S04, S05, S10 공통 적용)
- * - 초소형 미세 눈가루 (반지름 0.45px ~ 0.9px, 지름 0.9px ~ 1.8px 이하) 적용
- * - 상시 눈가루(95개) 외에 바닥 대기 눈가루(115개)를 유리구 바닥(트리/눈언덕 경계선)에 투명도 0으로 대기시켰다가,
- *   흔드는 순간 바닥에서부터 부드럽게 솟구쳐 오르며(alpha가 서서히 1로 상승) 풍성하게 휘날린 뒤
- *   다시 바닥으로 가라앉으며 사라지도록 구현하여 허공에서 갑자기 생겨나는 어색함을 완전히 제거했습니다.
+ * - 모바일 화면(360px~430px)에서 좌우 여백을 최소화하고 화면 중심에 시원하게 꽉 차도록
+ *   w-[92vw] max-w-[385px] sm:max-w-[420px] 크기로 대폭 확대했습니다.
+ * - ResizeObserver를 통해 스노우볼 이미지 크기가 커진 비율에 맞춰 <canvas> 크기와 원형 반경이 1:1로 정확히 동기화됩니다.
+ * - 초소형 미세 눈가루(반지름 0.45px ~ 0.9px) 및 바닥 대기 입자(120개)가 흔드는 순간 바닥에서부터 부드럽게 솟구쳐 합류합니다.
  */
 export default function SnowballGraphic({
   level = 0,
@@ -70,11 +70,11 @@ export default function SnowballGraphic({
     if (!ctx) return;
 
     let animationFrameId = 0;
-    let width = 260;
-    let height = 260;
-    let centerX = 130;
-    let centerY = 130;
-    let globeRadius = 126;
+    let width = 310;
+    let height = 310;
+    let centerX = 155;
+    let centerY = 155;
+    let globeRadius = 152;
 
     // 유리구 바닥(눈언덕 경계선 부근) 좌표 생성 헬퍼
     const getFloorPosition = () => {
@@ -143,40 +143,54 @@ export default function SnowballGraphic({
     const updateCanvasSize = () => {
       const rect = canvas.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
+        const prevWidth = width;
+        const prevHeight = height;
         width = rect.width;
         height = rect.height;
-      }
-      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-      canvas.width = Math.round(width * dpr);
-      canvas.height = Math.round(height * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      centerX = width * 0.5;
-      centerY = height * 0.5;
-      globeRadius = Math.min(width, height) * 0.5 - 2;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        centerX = width * 0.5;
+        centerY = height * 0.5;
+        globeRadius = Math.min(width, height) * 0.5 - 2;
+
+        // 캔버스 크기가 변경될 때 기존 입자들의 좌표도 새 원형 반경 비율에 맞게 1:1 스케일링
+        if (particles.length > 0 && prevWidth > 0 && prevHeight > 0) {
+          const scaleX = width / prevWidth;
+          const scaleY = height / prevHeight;
+          for (let i = 0; i < particles.length; i++) {
+            particles[i].x *= scaleX;
+            particles[i].y *= scaleY;
+          }
+        }
+      }
     };
 
     updateCanvasSize();
-    // 1) 상시 내리는 기본 미세 눈가루 (95개)
+    // 1) 상시 내리는 기본 미세 눈가루 (100개)
     for (let i = 0; i < IDLE_PARTICLE_COUNT; i++) {
       particles.push(createParticle(false, true));
     }
-    // 2) 바닥에 대기하다가 흔들 때 바닥에서 솟구쳐 오르는 추가 미세 눈가루 (115개)
+    // 2) 바닥에 대기하다가 흔들 때 바닥에서 솟구쳐 오르는 추가 미세 눈가루 (120개)
     for (let i = 0; i < RESERVE_PARTICLE_COUNT; i++) {
       particles.push(createParticle(true, false));
     }
 
-    const handleResize = () => {
-      updateCanvasSize();
-    };
-    window.addEventListener("resize", handleResize);
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => {
+        updateCanvasSize();
+      });
+      resizeObserver.observe(canvas);
+    }
+    window.addEventListener("resize", updateCanvasSize);
 
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // 흔들기 시작 순간:
-      // - 상시 입자들은 현재 위치에서 사방 무작위 각도·속도로 흩날림
-      // - 바닥 대기 입자들은 유리구 바닥(눈언덕 경계선)에서부터 위쪽·대각선으로 솟구쳐 오르며 서서히 모습을 드러냄
       if (triggerBurstRef.current) {
         triggerBurstRef.current = false;
         for (let i = 0; i < particles.length; i++) {
@@ -185,17 +199,16 @@ export default function SnowballGraphic({
             const floorPos = getFloorPosition();
             p.x = floorPos.x;
             p.y = floorPos.y;
-            // 바닥에서 위쪽 반구 방향(-PI ~ 0 부근)으로 힘차게 솟구치는 무작위 속도 부여
             const upAngle = -Math.PI * (0.12 + Math.random() * 0.76);
-            const speed = 3.8 + Math.random() * 6.8;
-            p.vx = Math.cos(upAngle) * speed + (Math.random() - 0.5) * 2.5;
+            const speed = 4.2 + Math.random() * 7.4;
+            p.vx = Math.cos(upAngle) * speed + (Math.random() - 0.5) * 2.8;
             p.vy = Math.sin(upAngle) * speed;
             p.rotSpeed = (Math.random() - 0.5) * 0.14;
           } else {
             const angle = Math.random() * Math.PI * 2;
-            const speed = 3.0 + Math.random() * 6.2;
+            const speed = 3.2 + Math.random() * 6.8;
             p.vx = Math.cos(angle) * speed;
-            p.vy = Math.sin(angle) * speed - Math.random() * 1.5;
+            p.vy = Math.sin(angle) * speed - Math.random() * 1.6;
             p.rotSpeed = (Math.random() - 0.5) * 0.14;
           }
         }
@@ -213,8 +226,6 @@ export default function SnowballGraphic({
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // 바닥 대기 입자의 투명도(alpha) 상태 전이:
-        // 흔드는 순간 바닥에서 솟구치며 부드럽게 1까지 올라왔다가, 에너지가 소진되어 가라앉을 때 서서히 0으로 복귀
         if (p.isReserve) {
           if (energy > 0.14) {
             p.alpha = Math.min(1, p.alpha + 0.12);
@@ -229,13 +240,11 @@ export default function SnowballGraphic({
         p.phase += p.freq;
 
         if (energy > 0.02) {
-          // 흔들리는 상태: 프레임별 무작위 난류(random jitter) + 공기 저항 감속
-          p.vx += (Math.random() - 0.5) * 1.35 * energy;
-          p.vy += (Math.random() - 0.5) * 1.35 * energy;
+          p.vx += (Math.random() - 0.5) * 1.45 * energy;
+          p.vy += (Math.random() - 0.5) * 1.45 * energy;
           p.vx *= 0.945;
           p.vy = p.vy * 0.945 + p.baseVy * (1 - energy) * 0.06;
         } else {
-          // 평소 상태: 미세한 좌우 랜덤 노이즈 + 잔잔한 낙하
           const targetVx =
             Math.sin(p.phase) * p.amp + (Math.random() - 0.5) * 0.07;
           p.vx += (targetVx - p.vx) * 0.08;
@@ -303,20 +312,24 @@ export default function SnowballGraphic({
     animationFrameId = window.requestAnimationFrame(render);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      window.removeEventListener("resize", updateCanvasSize);
       window.cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
+  // 모바일 화면(360px~430px)에서 좌우 패딩 제한을 넘어 화면에 꽉 차도록 최대 크기 확대
   const widthClass =
     size === "lg"
-      ? "w-[82vw] max-w-[320px] sm:w-[320px]"
-      : "w-[68vw] max-w-[240px] sm:w-[240px]";
+      ? "w-[92vw] max-w-[385px] sm:w-[400px] sm:max-w-[420px]"
+      : "w-[78vw] max-w-[290px] sm:w-[300px]";
 
   return (
-    <div className="relative flex flex-col items-center justify-center my-1 select-none">
+    <div className="relative flex flex-col items-center justify-center -mx-4 select-none">
       {showShakeBadge && (
-        <div className="mb-1.5 px-3 py-0.5 rounded-full bg-[#2C2F63] border border-white/25 text-white text-[10px] font-extrabold shadow-sm">
+        <div className="mb-1 px-3 py-1 rounded-full bg-[#2C2F63] border border-white/25 text-white text-[10px] font-extrabold leading-none shadow-sm">
           흔들림 모션
         </div>
       )}
@@ -334,7 +347,7 @@ export default function SnowballGraphic({
           className="w-full h-auto object-contain drop-shadow-[0_14px_28px_rgba(26,30,67,0.36)]"
         />
 
-        {/* 유리구슬 내부 원형 마스크 영역에만 작동하는 초소형 미세 눈가루 캔버스 */}
+        {/* 스노우볼 이미지 크기에 1:1 비율로 정확히 동기화되는 원형 유리구 눈가루 캔버스 */}
         <div
           className="absolute top-[4%] left-[11%] w-[78%] aspect-square rounded-full overflow-hidden pointer-events-none z-10"
           aria-hidden="true"

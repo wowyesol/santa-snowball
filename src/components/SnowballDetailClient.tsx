@@ -291,8 +291,8 @@ function SnowballDetailContent() {
               </Link>
             </div>
 
-            {/* 받은 편지 N개 (좌측 확대) & 현재 스노우볼 레벨 Lv.n (우측 끝 대칭 배치) — 배지 아래 간격을 대폭 넓혀 스노우볼이 배경 눈언덕 바닥에 착지하도록 배치 */}
-            <div className="mt-12 sm:mt-14 w-full flex items-center justify-between gap-2 mb-2 px-1">
+            {/* 받은 편지 N개 (좌측 확대) & 현재 스노우볼 레벨 Lv.n (우측 끝 대칭 배치) */}
+            <div className="mt-7 sm:mt-8 w-full flex items-center justify-between gap-2 px-1">
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
@@ -301,8 +301,8 @@ function SnowballDetailContent() {
               </span>
             </div>
 
-            {/* ② 스노우볼 이미지 영역 (배경 눈언덕 바닥에 자연스럽게 착지) */}
-            <div className="mt-1 mb-3 flex justify-center">
+            {/* ② 스노우볼 이미지 영역 (대폭 확대된 385~400px 크기에 맞춰 배경 눈언덕 바닥에 자연스럽게 착지) */}
+            <div className="-mt-2 -mb-1 flex justify-center">
               <SnowballGraphic
                 level={targetSnowball.level}
                 letters={letters}
@@ -403,7 +403,7 @@ function SnowballDetailContent() {
               )}
             </div>
 
-            <div className="mt-12 sm:mt-14 w-full flex items-center justify-between gap-2 mb-2 px-1">
+            <div className="mt-7 sm:mt-8 w-full flex items-center justify-between gap-2 px-1">
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
@@ -412,8 +412,8 @@ function SnowballDetailContent() {
               </span>
             </div>
 
-            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 (배경 눈언덕 바닥에 착지) */}
-            <div className="mt-1 mb-3 flex justify-center">
+            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 (대폭 확대된 크기로 배경 눈언덕 바닥에 착지) */}
+            <div className="-mt-2 -mb-1 flex justify-center">
               <SnowballGraphic
                 level={targetSnowball.level}
                 letters={letters}

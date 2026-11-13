@@ -173,8 +173,8 @@ export default function LandingView() {
           </section>
         )}
 
-        {/* 메인 타이틀 영역 (하단 스노우볼이 눈언덕 바닥에 착지하도록 상단 여백 확보) */}
-        <div className="mt-6 mb-10 flex flex-col items-center">
+        {/* 메인 타이틀 영역 (대폭 확대된 스노우볼이 눈언덕 바닥에 착지하도록 상단 여백 밸런스 조정) */}
+        <div className="mt-5 mb-4 flex flex-col items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.png"

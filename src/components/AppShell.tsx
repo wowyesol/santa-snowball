@@ -152,11 +152,10 @@ export default function AppShell({
               <button
                 type="button"
                 onClick={handleBackNavigation}
-                className="inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-[11px] font-extrabold transition-colors shrink-0"
+                className="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-[11px] font-extrabold text-center leading-none transition-colors shrink-0"
                 aria-label="이전 화면으로 이동"
               >
-                <span>‹</span>
-                <span>이전</span>
+                이전
               </button>
             )}
 
