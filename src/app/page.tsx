@@ -7,7 +7,7 @@ const SITE_URL = "https://santa-snowball.vercel.app";
 const DEFAULT_TITLE = "차곡차곡 크리스마스 | 산타보다 빠른 우편함";
 const DEFAULT_DESCRIPTION =
   "친구들과 따뜻한 연말 편지를 나누고 크리스마스 선물에도 응모해 보세요!";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/api/og?v=3`;
+const DEFAULT_OG_IMAGE = `${SITE_URL}/api/og?v=4`;
 
 interface HomePageProps {
   searchParams?:
@@ -33,7 +33,7 @@ export async function generateMetadata({
       const shareDescription = `${snowball.nickname}님의 스노우볼에 따뜻한 연말 편지를 남기면 응모권이 차곡차곡 쌓여요!`;
       const ogImageUrl = `${SITE_URL}/api/og?level=${encodeURIComponent(
         String(snowball.level ?? 0)
-      )}&v=3`;
+      )}&v=4`;
 
       return {
         title: shareTitle,

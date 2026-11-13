@@ -47,11 +47,10 @@ function SnowballDetailContent() {
   const [letters, setLetters] = useState<Letter[]>([]);
   const [ticketSummary, setTicketSummary] = useState<TicketSummary | null>(null);
 
-  // S04 상태: 공유 복사 토스트, 흔들기 애니메이션, P04 모달, 사진 저장 진행 상태
+  // S04 상태: 공유 복사 토스트, 흔들기 애니메이션, P04 모달
   const [copiedToast, setCopiedToast] = useState<string | null>(null);
   const [isShaking, setIsShaking] = useState<boolean>(false);
   const [isP04Open, setIsP04Open] = useState<boolean>(false);
-  const [isSavingPhoto, setIsSavingPhoto] = useState<boolean>(false);
 
   // S05 상태: 편지(최대 200자) 작성 및 완료/중복 상태
   const [myExistingLetter, setMyExistingLetter] = useState<Letter | null>(null);
@@ -185,115 +184,6 @@ function SnowballDetailContent() {
     }, 1800);
   };
 
-  // [S04] 모든 UI 버튼 없이 '배경 + 스노우볼 + 눈송이'만 1080x1920 세로 비율로 깔끔하게 찍어 저장하는 핸들러
-  const handleSaveSnowballPhoto = async () => {
-    if (!targetSnowball || isSavingPhoto) return;
-    setIsSavingPhoto(true);
-
-    try {
-      const currentLevelInfo = getSnowballLevelInfo(targetSnowball.level);
-      const loadImage = (src: string) =>
-        new Promise<HTMLImageElement>((resolve, reject) => {
-          const img = new window.Image();
-          img.crossOrigin = "anonymous";
-          img.onload = () => resolve(img);
-          img.onerror = (err) => reject(err);
-          img.src = src;
-        });
-
-      const [bgImg, snowballImg] = await Promise.all([
-        loadImage("/bg-night-snow.png?v=2"),
-        loadImage(currentLevelInfo.imageSrc),
-      ]);
-
-      const canvasW = 1080;
-      const canvasH = 1920;
-      const canvas = document.createElement("canvas");
-      canvas.width = canvasW;
-      canvas.height = canvasH;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas context를 생성할 수 없습니다.");
-
-      // 1) 배경: /bg-night-snow.png 원본을 1080x1920 세로 비율 그대로 전체에 깨끗하게 그리기
-      ctx.drawImage(bgImg, 0, 0, canvasW, canvasH);
-
-      // 2) 스노우볼 크기 및 눈밭 착지:
-      // 캔버스 가로 폭(1080px)의 약 60% 수준인 가로 648px(세로 약 779px)로 균형 있게 조절하고,
-      // 하단 눈언덕 능선 위치(캔버스 하단에서 약 240px~260px 위 지점)에 받침대 바닥이 자연스럽게 놓이도록 배치
-      const snowballW = 648;
-      const aspect =
-        snowballImg.naturalWidth > 0
-          ? snowballImg.naturalHeight / snowballImg.naturalWidth
-          : 1375 / 1144;
-      const snowballH = Math.round(snowballW * aspect);
-      const snowballX = Math.round((canvasW - snowballW) / 2);
-      // 스노우볼 PNG 하단 투명 여백(약 24px)을 감안해 이미지 하단을 캔버스 바닥에서 230px 위에 두면 실제 받침대가 눈언덕 능선(약 254px 위)에 정확히 안착
-      const bottomOffset = 230;
-      const snowballY = canvasH - bottomOffset - snowballH;
-
-      ctx.drawImage(snowballImg, snowballX, snowballY, snowballW, snowballH);
-
-      // 3) 눈송이: 스노우볼 원형 유리구 영역 내부에 100% 불투명 순백색(#FFFFFF) 눈송이(미세 눈가루 + 포인트 눈송이) 그리기
-      const globeLeft = snowballX + snowballW * 0.095;
-      const globeTop = snowballY + snowballH * 0.045;
-      const globeDiameter = snowballW * 0.81;
-      const globeRadius = globeDiameter * 0.5 - 4;
-      const globeCenterX = globeLeft + globeDiameter * 0.5;
-      const globeCenterY = globeTop + globeDiameter * 0.5;
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(globeCenterX, globeCenterY, globeRadius, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.fillStyle = "#FFFFFF";
-
-      // 120개의 눈송이 입자 (약 18개의 조금 더 큰 포인트 눈송이 포함)
-      const totalFlakes = 120;
-      for (let i = 0; i < totalFlakes; i++) {
-        // 황금각(Golden Angle) 기반 고른 분포 + 자연스러운 지터(Jitter)
-        const ratio = (i + 0.5) / totalFlakes;
-        const r = Math.sqrt(ratio) * (globeRadius - 8);
-        const theta = i * 2.399963229728653 + ((i % 7) - 3) * 0.08;
-        const fx = globeCenterX + Math.cos(theta) * r;
-        const fy = globeCenterY + Math.sin(theta) * r;
-
-        const isAccent = i % 6 === 0;
-        const baseR = isAccent
-          ? 2.2 + (i % 5) * 0.28
-          : 1.05 + (i % 4) * 0.22;
-        const stretch = 0.82 + (i % 5) * 0.09;
-        const rx = baseR * stretch;
-        const ry = baseR * (2 - stretch);
-        const rot = (i * 1.17) % (Math.PI * 2);
-
-        ctx.save();
-        ctx.translate(fx, fy);
-        ctx.rotate(rot);
-        ctx.beginPath();
-        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-      ctx.restore();
-
-      // 4) 고화질 PNG 변환 및 즉시 다운로드
-      const dataUrl = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.download = `santa-snowball-${targetSnowball.nickname || "my"}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      showCopyNotice("배경 + 스노우볼 사진이 저장되었어요! 📷");
-    } catch (err) {
-      console.error("[사진 저장 오류]", err);
-      showCopyNotice("사진 저장 중 오류가 발생했어요.");
-    } finally {
-      setIsSavingPhoto(false);
-    }
-  };
-
   // [S05] 친구 스노우볼에 편지 넣기 제출 핸들러
   const handleSendLetterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -401,24 +291,14 @@ function SnowballDetailContent() {
               </Link>
             </div>
 
-            {/* 받은 편지 N개 (좌측) & [📷 사진 저장] + 현재 스노우볼 레벨 Lv.n (우측) - 인증 배지와의 간격을 좁혀 위로 올림 */}
+            {/* 받은 편지 N개 (좌측) & 현재 스노우볼 레벨 Lv.n (우측) - 인증 배지와의 간격을 좁혀 위로 올림 */}
             <div className="mt-3.5 sm:mt-4 w-full flex items-center justify-between gap-2 px-1">
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={handleSaveSnowballPhoto}
-                  disabled={isSavingPhoto}
-                  className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 border border-white/30 text-xs font-extrabold text-white leading-none shadow-2xs transition-all disabled:opacity-60"
-                >
-                  {isSavingPhoto ? "저장 중..." : "📷 사진 저장"}
-                </button>
-                <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#2C2F63]/80 border border-white/25 text-sm sm:text-base font-extrabold text-white leading-none shadow-2xs">
-                  {levelInfo.stageLabel}
-                </span>
-              </div>
+              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#2C2F63]/80 border border-white/25 text-sm sm:text-base font-extrabold text-white leading-none shadow-2xs">
+                {levelInfo.stageLabel}
+              </span>
             </div>
 
             {/* ② 스노우볼 이미지 영역 (위쪽 줄이 올라간 만큼 상단 마진을 확보해 스노우볼 하단 받침대가 눈언덕 바닥에 놓인 위치는 그대로 유지) */}

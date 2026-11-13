@@ -7,7 +7,7 @@ import {
   AuthSnowballState,
   consumeFlashToast,
   getCurrentAuthAndSnowball,
-  getTicketSummary,
+  getSnowballLevelInfo,
   logPageViewOncePerSession,
   signOutAll,
 } from "@/lib/supabase";
@@ -47,7 +47,7 @@ export default function AppShell({
   const router = useRouter();
 
   const [auth, setAuth] = useState<AuthSnowballState | null>(null);
-  const [ticketBadgeCount, setTicketBadgeCount] = useState<number>(0);
+  const [isSavingPhoto, setIsSavingPhoto] = useState<boolean>(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const syncHeader = useCallback(async () => {
@@ -57,13 +57,136 @@ export default function AppShell({
     if (pathname !== "/admin") {
       logPageViewOncePerSession(current.snowball?.slug ?? null);
     }
-    if (current.snowball) {
-      const summary = await getTicketSummary(current.snowball.id);
-      setTicketBadgeCount(summary.availableTickets);
-    } else {
-      setTicketBadgeCount(0);
-    }
   }, [pathname]);
+
+  // 상단 헤더 [📷 사진 저장] 클릭 시: 원본 배경 이미지(bgImg.naturalWidth x bgImg.naturalHeight) 비율 그대로
+  // 상단 타이틀([닉네임]의\n스노우볼) + 스노우볼(가로 폭의 88%, 하단 5% 지점 착지) + 눈송이를 그려 PNG로 즉시 저장
+  const handleSaveSnowballPhoto = async () => {
+    const sb = auth?.snowball;
+    if (!sb || isSavingPhoto) return;
+    setIsSavingPhoto(true);
+
+    try {
+      if (typeof document !== "undefined" && document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+
+      const levelInfo = getSnowballLevelInfo(sb.level);
+      const loadImage = (src: string) =>
+        new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new window.Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => resolve(img);
+          img.onerror = (err) => reject(err);
+          img.src = src;
+        });
+
+      const [bgImg, snowballImg] = await Promise.all([
+        loadImage("/bg-night-snow.png?v=2"),
+        loadImage(levelInfo.imageSrc),
+      ]);
+
+      // 1) 원본 배경 이미지(/bg-night-snow.png)의 실제 원본 가로·세로 크기 그대로 캔버스 생성
+      const canvasW = bgImg.naturalWidth || 941;
+      const canvasH = bgImg.naturalHeight || 1672;
+      const canvas = document.createElement("canvas");
+      canvas.width = canvasW;
+      canvas.height = canvasH;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas context를 생성할 수 없습니다.");
+
+      ctx.drawImage(bgImg, 0, 0, canvasW, canvasH);
+
+      // 2) 상단 타이틀: 웹 화면과 동일한 위치 비율(상단에서 약 13% 지점)에 '[닉네임]의\n스노우볼' 그리기
+      ctx.save();
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(26, 30, 67, 0.38)";
+      ctx.shadowBlur = Math.round(canvasW * 0.015);
+      ctx.shadowOffsetY = Math.round(canvasW * 0.004);
+
+      const titleFontSize1 = Math.round(canvasW * 0.08);
+      const titleFontSize2 = Math.round(canvasW * 0.058);
+      const titleY1 = Math.round(canvasH * 0.13);
+      const titleY2 = titleY1 + Math.round(canvasW * 0.086);
+
+      ctx.font = `800 ${titleFontSize1}px "HakgyoansimDunggeunmisoTTF-B", "Gowun Dodum", sans-serif`;
+      ctx.fillText(`${sb.nickname}의`, canvasW * 0.5, titleY1);
+
+      ctx.font = `700 ${titleFontSize2}px "HakgyoansimDunggeunmisoTTF-B", "Gowun Dodum", sans-serif`;
+      ctx.fillText("스노우볼", canvasW * 0.5, titleY2);
+      ctx.restore();
+
+      // 3) 스노우볼 크기 및 위치: 웹 화면처럼 큼직하게 캔버스 가로 폭의 88% 크기로 그리고,
+      //    받침대 하단이 원본 배경 이미지의 흰 눈언덕 바닥(캔버스 맨 아래에서 약 5% 위 지점)에 착지하도록 배치
+      const snowballW = Math.round(canvasW * 0.88);
+      const aspect =
+        snowballImg.naturalWidth > 0
+          ? snowballImg.naturalHeight / snowballImg.naturalWidth
+          : 1375 / 1144;
+      const snowballH = Math.round(snowballW * aspect);
+      const snowballX = Math.round((canvasW - snowballW) / 2);
+      const bottomMargin = Math.round(canvasH * 0.048);
+      const snowballY = canvasH - bottomMargin - snowballH;
+
+      ctx.drawImage(snowballImg, snowballX, snowballY, snowballW, snowballH);
+
+      // 4) 유리구 내부 눈가루 입자(SnowballGraphic과 동일한 top 4%, left 11%, width 78% 원형 영역) 그리기
+      const globeLeft = snowballX + snowballW * 0.11;
+      const globeTop = snowballY + snowballH * 0.04;
+      const globeDiameter = snowballW * 0.78;
+      const globeRadius = globeDiameter * 0.5 - 4;
+      const globeCenterX = globeLeft + globeDiameter * 0.5;
+      const globeCenterY = globeTop + globeDiameter * 0.5;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(globeCenterX, globeCenterY, globeRadius, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = "#FFFFFF";
+
+      const scaleFactor = globeDiameter / 300;
+      const totalFlakes = 120;
+      for (let i = 0; i < totalFlakes; i++) {
+        const ratio = (i + 0.5) / totalFlakes;
+        const r = Math.sqrt(ratio) * (globeRadius - 6);
+        const theta = i * 2.399963229728653 + ((i % 7) - 3) * 0.09;
+        const fx = globeCenterX + Math.cos(theta) * r;
+        const fy = globeCenterY + Math.sin(theta) * r;
+
+        const isAccent = i < 18;
+        const baseR =
+          (isAccent ? 1.2 + (i % 5) * 0.11 : 0.5 + (i % 4) * 0.1) * scaleFactor;
+        const stretch = 0.8 + (i % 5) * 0.08;
+        const rx = baseR * stretch;
+        const ry = baseR * (2 - stretch);
+        const rot = (i * 1.17) % (Math.PI * 2);
+
+        ctx.save();
+        ctx.translate(fx, fy);
+        ctx.rotate(rot);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+
+      // 5) PNG 파일 다운로드
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.download = `santa-snowball-${sb.nickname || "my"}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("[사진 저장 오류]", err);
+    } finally {
+      setIsSavingPhoto(false);
+    }
+  };
 
   useEffect(() => {
     syncHeader();
@@ -170,12 +293,14 @@ export default function AppShell({
           </div>
 
           {auth?.snowball ? (
-            <Link
-              href="/raffle"
-              className="px-3 py-1 rounded-full bg-[#FCEED8] text-[#2C2F63] text-[11px] font-extrabold shadow-xs hover:bg-white transition-colors shrink-0"
+            <button
+              type="button"
+              onClick={handleSaveSnowballPhoto}
+              disabled={isSavingPhoto}
+              className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#FCEED8] text-[#2C2F63] text-[11px] font-extrabold shadow-xs hover:bg-white active:scale-95 transition-all shrink-0 disabled:opacity-60"
             >
-              응모권 {ticketBadgeCount}장
-            </Link>
+              {isSavingPhoto ? "저장 중..." : "📷 사진 저장"}
+            </button>
           ) : (
             <Link
               href="/guide"
