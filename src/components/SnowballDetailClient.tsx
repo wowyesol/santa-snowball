@@ -292,7 +292,7 @@ function SnowballDetailContent() {
             </div>
 
             {/* 받은 편지 N개 (좌측 확대) & 현재 스노우볼 레벨 Lv.n (우측 끝 대칭 배치) */}
-            <div className="mt-7 sm:mt-8 w-full flex items-center justify-between gap-2 px-1">
+            <div className="mt-11 sm:mt-12 w-full flex items-center justify-between gap-2 px-1">
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
@@ -301,8 +301,8 @@ function SnowballDetailContent() {
               </span>
             </div>
 
-            {/* ② 스노우볼 이미지 영역 (대폭 확대된 385~400px 크기에 맞춰 배경 눈언덕 바닥에 자연스럽게 착지) */}
-            <div className="-mt-2 -mb-1 flex justify-center">
+            {/* ② 스노우볼 이미지 영역 (하단 흰 눈언덕 바닥에 받침대가 안정적으로 안착하도록 위치 하향 조정) */}
+            <div className="mt-1 mb-2 flex justify-center">
               <SnowballGraphic
                 level={targetSnowball.level}
                 letters={letters}
@@ -403,7 +403,7 @@ function SnowballDetailContent() {
               )}
             </div>
 
-            <div className="mt-7 sm:mt-8 w-full flex items-center justify-between gap-2 px-1">
+            <div className="mt-11 sm:mt-12 w-full flex items-center justify-between gap-2 px-1">
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
@@ -412,8 +412,8 @@ function SnowballDetailContent() {
               </span>
             </div>
 
-            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 (대폭 확대된 크기로 배경 눈언덕 바닥에 착지) */}
-            <div className="-mt-2 -mb-1 flex justify-center">
+            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 (하단 흰 눈언덕 바닥에 받침대가 안정적으로 안착하도록 위치 하향 조정) */}
+            <div className="mt-1 mb-2 flex justify-center">
               <SnowballGraphic
                 level={targetSnowball.level}
                 letters={letters}
@@ -620,7 +620,10 @@ function SnowballDetailContent() {
                 </div>
               ) : (
                 <>
-                  <p className="mb-3 text-left text-xs font-extrabold text-[#2C2F63]">
+                  <p
+                    style={{ fontFamily: '"Gowun Dodum", sans-serif' }}
+                    className="mb-3 text-left text-xs font-medium text-[#2C2F63]"
+                  >
                     편지는 12월 1일에 공개 돼요
                   </p>
 
@@ -628,14 +631,23 @@ function SnowballDetailContent() {
                     {letters.map((item) => (
                       <div
                         key={item.id}
-                        style={{ backgroundColor: levelInfo.letterCardBgHex }}
+                        style={{
+                          backgroundColor: levelInfo.letterCardBgHex,
+                          fontFamily: '"Gowun Dodum", sans-serif',
+                        }}
                         className="p-3.5 rounded-2xl border border-[#2C2F63]/15 text-[#2C2F63] text-left shadow-sm"
                       >
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-extrabold text-[#2C2F63]">
-                            💌 {item.sender_name}
+                          <span
+                            style={{ fontFamily: '"Gowun Dodum", sans-serif' }}
+                            className="text-xs font-medium text-[#2C2F63]"
+                          >
+                            from.{item.sender_name}
                           </span>
-                          <span className="text-[10px] font-bold text-[#2C2F63]/70">
+                          <span
+                            style={{ fontFamily: '"Gowun Dodum", sans-serif' }}
+                            className="text-[10px] font-normal text-[#2C2F63]/70"
+                          >
                             {item.created_at
                               ? new Date(item.created_at).toLocaleDateString(
                                   "ko-KR",
@@ -646,7 +658,8 @@ function SnowballDetailContent() {
                         </div>
                         {/* 12월 1일 공개 전까지 편지 원문 스포일러 원천 차단 (고정 마스킹 + 짙은 남색 #2C2F63 블러 처리) */}
                         <p
-                          className="text-xs text-[#2C2F63]/75 leading-relaxed blur-[6px] select-none pointer-events-none"
+                          style={{ fontFamily: '"Gowun Dodum", sans-serif' }}
+                          className="text-xs font-normal text-[#2C2F63]/75 leading-relaxed blur-[6px] select-none pointer-events-none"
                           aria-hidden="true"
                         >
                           12월 1일에 공개되는 비밀 크리스마스 메시지입니다. 조금만 기다려 주세요!

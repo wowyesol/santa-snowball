@@ -30,15 +30,16 @@ interface SnowParticle {
   lobeFactor: number;
 }
 
-const IDLE_PARTICLE_COUNT = 100;
-const RESERVE_PARTICLE_COUNT = 120;
+const IDLE_PARTICLE_COUNT = 120;
+const RESERVE_PARTICLE_COUNT = 135;
 
 /**
  * 스노우볼 중앙 그래픽 컴포넌트 (S01, S04, S05, S10 공통 적용)
  * - 모바일 화면(360px~430px)에서 좌우 여백을 최소화하고 화면 중심에 시원하게 꽉 차도록
  *   w-[92vw] max-w-[385px] sm:max-w-[420px] 크기로 대폭 확대했습니다.
  * - ResizeObserver를 통해 스노우볼 이미지 크기가 커진 비율에 맞춰 <canvas> 크기와 원형 반경이 1:1로 정확히 동기화됩니다.
- * - 초소형 미세 눈가루(반지름 0.45px ~ 0.9px) 및 바닥 대기 입자(120개)가 흔드는 순간 바닥에서부터 부드럽게 솟구쳐 합류합니다.
+ * - 기본 초소형 미세 눈가루(반지름 0.45px ~ 0.9px)를 유지하면서, 눈송이 개수를 120개로 늘리고
+ *   약간 더 큰 포인트 눈송이(반지름 1.15px ~ 1.7px)를 일부 섞어 입체감을 살렸습니다.
  */
 export default function SnowballGraphic({
   level = 0,
@@ -90,10 +91,13 @@ export default function SnowballGraphic({
 
     const createParticle = (
       isReserve: boolean,
-      randomY = true
+      randomY = true,
+      isAccent = false
     ): SnowParticle => {
-      // 초소형 미세 눈가루: 지름 0.9px ~ 1.8px (반지름 0.45px ~ 0.9px)
-      const radius = 0.45 + Math.random() * 0.45;
+      // 기본 초소형 미세 눈가루(반지름 0.45px ~ 0.9px) + 일부 약간 더 큰 포인트 눈송이(반지름 1.15px ~ 1.7px)
+      const radius = isAccent
+        ? 1.15 + Math.random() * 0.55
+        : 0.45 + Math.random() * 0.45;
       const stretch = 0.78 + Math.random() * 0.44;
       const rx = radius * stretch;
       const ry = radius * (2 - stretch);
@@ -170,13 +174,15 @@ export default function SnowballGraphic({
     };
 
     updateCanvasSize();
-    // 1) 상시 내리는 기본 미세 눈가루 (100개)
+    // 1) 상시 내리는 눈송이 (120개: 기본 미세 눈가루 + 약 18개의 조금 더 큰 포인트 눈송이 혼합)
     for (let i = 0; i < IDLE_PARTICLE_COUNT; i++) {
-      particles.push(createParticle(false, true));
+      const isAccent = i < 18;
+      particles.push(createParticle(false, true, isAccent));
     }
-    // 2) 바닥에 대기하다가 흔들 때 바닥에서 솟구쳐 오르는 추가 미세 눈가루 (120개)
+    // 2) 바닥에 대기하다가 흔들 때 바닥에서 솟구쳐 오르는 추가 눈송이 (135개: 기본 미세 눈가루 + 약 20개의 포인트 눈송이 혼합)
     for (let i = 0; i < RESERVE_PARTICLE_COUNT; i++) {
-      particles.push(createParticle(true, false));
+      const isAccent = i < 20;
+      particles.push(createParticle(true, false, isAccent));
     }
 
     let resizeObserver: ResizeObserver | null = null;
