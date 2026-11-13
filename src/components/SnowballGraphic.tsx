@@ -13,31 +13,32 @@ interface SnowballGraphicProps {
 }
 
 interface SnowParticle {
+  isReserve: boolean; // 평소 바닥 대기 입자 여부 (흔들 때 바닥에서 솟구치며 합류)
+  alpha: number; // 상시 입자는 항상 1, 바닥 대기 입자는 평소 0 -> 흔들 때 1 -> 가라앉을 때 0
   x: number;
   y: number;
   vx: number;
   vy: number;
   baseVy: number;
-  rx: number; // 가로 반지름 (지름 1.5px ~ 3.2px -> 반지름 0.75px ~ 1.6px)
-  ry: number; // 세로 반지름 (살짝 찌그러진 비대칭 손그림 점 비율)
-  rot: number; // 회전 각도 (rad)
+  rx: number; // 초소형 미세 눈가루 반지름 (0.45px ~ 0.9px, 지름 기준 약 0.9px ~ 1.8px)
+  ry: number;
+  rot: number;
   rotSpeed: number;
   phase: number;
   freq: number;
   amp: number;
-  lobeFactor: number; // 조약돌 형태의 미세 비대칭 계수
+  lobeFactor: number;
 }
 
-const PARTICLE_COUNT = 105;
+const IDLE_PARTICLE_COUNT = 95;
+const RESERVE_PARTICLE_COUNT = 115;
 
 /**
  * 스노우볼 중앙 그래픽 컴포넌트 (S01, S04, S05, S10 공통 적용)
- * 1) 스노우볼 크기 대폭 확대: 모바일(360~430px)에서 중심 오브젝트로 꽉 차게 보이도록 w-[82vw] max-w-[320px] 적용
- * 2) <canvas> + requestAnimationFrame 기반 무작위(Random) 물리 눈송이 엔진:
- *    - 지름 1.5px ~ 3.2px 수준의 아주 작은 100% 불투명 순백색(#FFFFFF) 비정형 손그림 점 105개
- *    - 평소: 미세한 좌우 랜덤 노이즈와 함께 잔잔하게 낙하
- *    - 흔들었을 때(isShaking): 모든 입자에 각각 완전히 다른 무작위 각도·속도의 초기 가속도(vx, vy) 및
- *      프레임별 미세 난류(random jitter)를 부여해 사방으로 흩날리다가 서서히 감속하며 잔잔한 낙하로 복귀
+ * - 초소형 미세 눈가루 (반지름 0.45px ~ 0.9px, 지름 0.9px ~ 1.8px 이하) 적용
+ * - 상시 눈가루(95개) 외에 바닥 대기 눈가루(115개)를 유리구 바닥(트리/눈언덕 경계선)에 투명도 0으로 대기시켰다가,
+ *   흔드는 순간 바닥에서부터 부드럽게 솟구쳐 오르며(alpha가 서서히 1로 상승) 풍성하게 휘날린 뒤
+ *   다시 바닥으로 가라앉으며 사라지도록 구현하여 허공에서 갑자기 생겨나는 어색함을 완전히 제거했습니다.
  */
 export default function SnowballGraphic({
   level = 0,
@@ -52,8 +53,6 @@ export default function SnowballGraphic({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isShakingRef = useRef<boolean>(isShaking);
   const shakeEnergyRef = useRef<number>(0);
-
-  // isShaking 상태가 true로 바뀔 때마다 각 입자에 무작위 폭발 가속도 트리거 신호 전달
   const triggerBurstRef = useRef<boolean>(false);
 
   useEffect(() => {
@@ -77,47 +76,65 @@ export default function SnowballGraphic({
     let centerY = 130;
     let globeRadius = 126;
 
-    const createParticle = (randomY = true): SnowParticle => {
-      // 지름 1.5px ~ 3.2px -> 반지름 0.75px ~ 1.6px
-      const diameter = 1.5 + Math.random() * 1.7;
-      const baseRadius = diameter * 0.5;
-      // 정원이 아닌 살짝 찌그러진 손그림 점 형태 (비대칭 rx, ry)
-      const stretch = 0.76 + Math.random() * 0.48;
-      const rx = baseRadius * stretch;
-      const ry = baseRadius * (2 - stretch);
+    // 유리구 바닥(눈언덕 경계선 부근) 좌표 생성 헬퍼
+    const getFloorPosition = () => {
+      const spreadX = (Math.random() * 2 - 1) * (globeRadius * 0.78);
+      const x = centerX + spreadX;
+      const maxBottomY =
+        centerY +
+        Math.sqrt(Math.max(0, globeRadius * globeRadius - spreadX * spreadX));
+      // 유리구 하단 눈언덕 영역(바닥 원호에서 4~24px 위쪽)에 대기
+      const y = maxBottomY - (4 + Math.random() * 20);
+      return { x, y };
+    };
 
-      // 원형 유리구 내부에 고르게 분포하도록 극좌표/직교좌표 생성
+    const createParticle = (
+      isReserve: boolean,
+      randomY = true
+    ): SnowParticle => {
+      // 초소형 미세 눈가루: 지름 0.9px ~ 1.8px (반지름 0.45px ~ 0.9px)
+      const radius = 0.45 + Math.random() * 0.45;
+      const stretch = 0.78 + Math.random() * 0.44;
+      const rx = radius * stretch;
+      const ry = radius * (2 - stretch);
+
       let x = centerX;
       let y = centerY;
-      if (randomY) {
+
+      if (isReserve) {
+        const floorPos = getFloorPosition();
+        x = floorPos.x;
+        y = floorPos.y;
+      } else if (randomY) {
         const r = Math.sqrt(Math.random()) * (globeRadius - 4);
         const theta = Math.random() * Math.PI * 2;
         x = centerX + Math.cos(theta) * r;
         y = centerY + Math.sin(theta) * r;
       } else {
-        // 상단에서 새로 내려오는 입자
         const spreadX = (Math.random() * 2 - 1) * (globeRadius * 0.88);
         x = centerX + spreadX;
         const maxTopY =
           centerY -
           Math.sqrt(Math.max(0, globeRadius * globeRadius - spreadX * spreadX));
-        y = maxTopY + 2 + Math.random() * 10;
+        y = maxTopY + 2 + Math.random() * 8;
       }
 
       return {
+        isReserve,
+        alpha: isReserve ? 0 : 1,
         x,
         y,
-        vx: (Math.random() - 0.5) * 0.25,
-        vy: 0.22 + Math.random() * 0.36,
-        baseVy: 0.22 + Math.random() * 0.36,
+        vx: (Math.random() - 0.5) * 0.22,
+        vy: 0.2 + Math.random() * 0.34,
+        baseVy: 0.2 + Math.random() * 0.34,
         rx,
         ry,
         rot: Math.random() * Math.PI * 2,
         rotSpeed: (Math.random() - 0.5) * 0.03,
         phase: Math.random() * Math.PI * 2,
         freq: 0.015 + Math.random() * 0.025,
-        amp: 0.12 + Math.random() * 0.22,
-        lobeFactor: (Math.random() - 0.5) * 0.28,
+        amp: 0.1 + Math.random() * 0.2,
+        lobeFactor: (Math.random() - 0.5) * 0.25,
       };
     };
 
@@ -140,8 +157,13 @@ export default function SnowballGraphic({
     };
 
     updateCanvasSize();
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      particles.push(createParticle(true));
+    // 1) 상시 내리는 기본 미세 눈가루 (95개)
+    for (let i = 0; i < IDLE_PARTICLE_COUNT; i++) {
+      particles.push(createParticle(false, true));
+    }
+    // 2) 바닥에 대기하다가 흔들 때 바닥에서 솟구쳐 오르는 추가 미세 눈가루 (115개)
+    for (let i = 0; i < RESERVE_PARTICLE_COUNT; i++) {
+      particles.push(createParticle(true, false));
     }
 
     const handleResize = () => {
@@ -152,44 +174,70 @@ export default function SnowballGraphic({
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // 흔들기 시작 순간: 모든 입자에 완전히 다른 무작위 각도와 속도의 초기 가속도 부여
+      // 흔들기 시작 순간:
+      // - 상시 입자들은 현재 위치에서 사방 무작위 각도·속도로 흩날림
+      // - 바닥 대기 입자들은 유리구 바닥(눈언덕 경계선)에서부터 위쪽·대각선으로 솟구쳐 오르며 서서히 모습을 드러냄
       if (triggerBurstRef.current) {
         triggerBurstRef.current = false;
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i];
-          const angle = Math.random() * Math.PI * 2;
-          const speed = 3.2 + Math.random() * 6.8;
-          p.vx = Math.cos(angle) * speed;
-          p.vy = Math.sin(angle) * speed - Math.random() * 1.8;
-          p.rotSpeed = (Math.random() - 0.5) * 0.14;
+          if (p.isReserve) {
+            const floorPos = getFloorPosition();
+            p.x = floorPos.x;
+            p.y = floorPos.y;
+            // 바닥에서 위쪽 반구 방향(-PI ~ 0 부근)으로 힘차게 솟구치는 무작위 속도 부여
+            const upAngle = -Math.PI * (0.12 + Math.random() * 0.76);
+            const speed = 3.8 + Math.random() * 6.8;
+            p.vx = Math.cos(upAngle) * speed + (Math.random() - 0.5) * 2.5;
+            p.vy = Math.sin(upAngle) * speed;
+            p.rotSpeed = (Math.random() - 0.5) * 0.14;
+          } else {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 3.0 + Math.random() * 6.2;
+            p.vx = Math.cos(angle) * speed;
+            p.vy = Math.sin(angle) * speed - Math.random() * 1.5;
+            p.rotSpeed = (Math.random() - 0.5) * 0.14;
+          }
         }
       }
 
       const energy = shakeEnergyRef.current;
-      if (energy > 0.005) {
-        // 흔들리는 동안 서서히 에너지가 감쇠 (약 1.8초 동안 활발히 흩날린 뒤 안착)
+      if (energy > 0.004) {
         shakeEnergyRef.current *= 0.968;
       } else {
         shakeEnergyRef.current = 0;
       }
 
-      // 블러·빛번짐·투명도 없이 100% 불투명한 순백색(#FFFFFF) 고정
       ctx.fillStyle = "#FFFFFF";
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
+
+        // 바닥 대기 입자의 투명도(alpha) 상태 전이:
+        // 흔드는 순간 바닥에서 솟구치며 부드럽게 1까지 올라왔다가, 에너지가 소진되어 가라앉을 때 서서히 0으로 복귀
+        if (p.isReserve) {
+          if (energy > 0.14) {
+            p.alpha = Math.min(1, p.alpha + 0.12);
+          } else {
+            p.alpha = Math.max(0, p.alpha - 0.025);
+          }
+          if (p.alpha <= 0.01) {
+            continue;
+          }
+        }
+
         p.phase += p.freq;
 
         if (energy > 0.02) {
           // 흔들리는 상태: 프레임별 무작위 난류(random jitter) + 공기 저항 감속
-          p.vx += (Math.random() - 0.5) * 1.45 * energy;
-          p.vy += (Math.random() - 0.5) * 1.45 * energy;
+          p.vx += (Math.random() - 0.5) * 1.35 * energy;
+          p.vy += (Math.random() - 0.5) * 1.35 * energy;
           p.vx *= 0.945;
           p.vy = p.vy * 0.945 + p.baseVy * (1 - energy) * 0.06;
         } else {
-          // 평소 상태: 미세한 좌우 랜덤 노이즈 + 잔잔한 낙하 속도로 자연스럽게 수렴
+          // 평소 상태: 미세한 좌우 랜덤 노이즈 + 잔잔한 낙하
           const targetVx =
-            Math.sin(p.phase) * p.amp + (Math.random() - 0.5) * 0.08;
+            Math.sin(p.phase) * p.amp + (Math.random() - 0.5) * 0.07;
           p.vx += (targetVx - p.vx) * 0.08;
           p.vy += (p.baseVy - p.vy) * 0.06 + (Math.random() - 0.5) * 0.02;
           p.rotSpeed *= 0.98;
@@ -206,8 +254,7 @@ export default function SnowballGraphic({
         const maxR = globeRadius - 2;
 
         if (distSq > maxR * maxR) {
-          if (energy > 0.08) {
-            // 흔들리는 중에는 유리구 벽면을 타고 안쪽으로 무작위 각도로 튕겨 들어옴
+          if (energy > 0.06 || p.isReserve) {
             const dist = Math.sqrt(distSq) || 1;
             const nx = dx / dist;
             const ny = dy / dist;
@@ -216,13 +263,12 @@ export default function SnowballGraphic({
 
             const dot = p.vx * nx + p.vy * ny;
             const scatter = (Math.random() - 0.5) * 0.9;
-            const rvx = (p.vx - 1.75 * dot * nx) * 0.72;
-            const rvy = (p.vy - 1.75 * dot * ny) * 0.72;
+            const rvx = (p.vx - 1.75 * dot * nx) * 0.7;
+            const rvy = (p.vy - 1.75 * dot * ny) * 0.7;
             p.vx = rvx * Math.cos(scatter) - rvy * Math.sin(scatter);
             p.vy = rvx * Math.sin(scatter) + rvy * Math.cos(scatter);
           } else {
-            // 평소 상태에서는 바닥에 닿은 눈송이를 유리구 상단 랜덤 위치로 재배치
-            const respawned = createParticle(false);
+            const respawned = createParticle(false, false);
             p.x = respawned.x;
             p.y = respawned.y;
             p.vx = respawned.vx;
@@ -230,13 +276,14 @@ export default function SnowballGraphic({
           }
         }
 
-        // 살짝 찌그러진 비정형 손그림 조약돌 점 그리기 (100% 불투명 #FFFFFF)
         ctx.save();
+        if (p.isReserve && p.alpha < 1) {
+          ctx.globalAlpha = p.alpha;
+        }
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rot);
         ctx.beginPath();
         ctx.ellipse(0, 0, p.rx, p.ry, 0, 0, Math.PI * 2);
-        // 미세한 비대칭 보조 원을 살짝 겹쳐 정원이 아닌 손그림 크레용 점 질감 구현
         ctx.ellipse(
           p.rx * p.lobeFactor,
           p.ry * p.lobeFactor,
@@ -287,7 +334,7 @@ export default function SnowballGraphic({
           className="w-full h-auto object-contain drop-shadow-[0_14px_28px_rgba(26,30,67,0.36)]"
         />
 
-        {/* 유리구슬 내부 원형 마스크 영역에만 작동하는 무작위 물리 눈송이 캔버스 */}
+        {/* 유리구슬 내부 원형 마스크 영역에만 작동하는 초소형 미세 눈가루 캔버스 */}
         <div
           className="absolute top-[4%] left-[11%] w-[78%] aspect-square rounded-full overflow-hidden pointer-events-none z-10"
           aria-hidden="true"

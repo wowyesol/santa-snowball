@@ -100,9 +100,9 @@ export interface GeminiVerification {
 
 /**
  * 스노우볼 3단계 레벨 시스템 (Lv.0 민트 → Lv.1 핑크 → Lv.3 골드)
- * - Lv.0 (사인업 0명, 기본): 민트 스노우볼 (/lv0_snowball.png), 우편함 배경 #C0EEE8
- * - Lv.1 (사인업 1~2명): 핑크 스노우볼 (/lv1_snowball.png), 우편함 배경 #FBD0D8
- * - Lv.3 (사인업 3명 이상, 최대 단계): 골드 스노우볼 (/lv3_snowball.png), 우편함 배경 #FAEBBF
+ * - Lv.0 (사인업 0명, 기본): 민트 스노우볼 (/lv0_snowball.png), 우편함 바탕 #C0EEE8, 편지지 카드 #F3D183
+ * - Lv.1 (사인업 1~2명): 핑크 스노우볼 (/lv1_snowball.png), 우편함 바탕 #FBD0D8, 편지지 카드 #FDF9EB
+ * - Lv.3 (사인업 3명 이상, 최대 단계): 골드 스노우볼 (/lv3_snowball.png), 우편함 바탕 #FAEBBF, 편지지 카드 #FFFBF9
  */
 export interface SnowballLevelInfo {
   rawLevel: number;
@@ -112,6 +112,7 @@ export interface SnowballLevelInfo {
   shortBadge: string;
   baseColorName: string;
   mailboxBgHex: "#C0EEE8" | "#FBD0D8" | "#FAEBBF";
+  letterCardBgHex: "#F3D183" | "#FDF9EB" | "#FFFBF9";
   imageSrc: string;
   nextTierTarget: number | null;
   remainingToNext: number;
@@ -134,6 +135,7 @@ export function getSnowballLevelInfo(
       shortBadge: "Lv.3 · 골드 스노우볼",
       baseColorName: "골드 스노우볼",
       mailboxBgHex: "#FAEBBF",
+      letterCardBgHex: "#FFFBF9",
       imageSrc: "/lv3_snowball.png",
       nextTierTarget: null,
       remainingToNext: 0,
@@ -150,6 +152,7 @@ export function getSnowballLevelInfo(
       shortBadge: "Lv.1 · 핑크 스노우볼",
       baseColorName: "핑크 스노우볼",
       mailboxBgHex: "#FBD0D8",
+      letterCardBgHex: "#FDF9EB",
       imageSrc: "/lv1_snowball.png",
       nextTierTarget: 3,
       remainingToNext: 3 - rawLevel,
@@ -165,6 +168,7 @@ export function getSnowballLevelInfo(
     shortBadge: "Lv.0 · 민트 스노우볼",
     baseColorName: "민트 스노우볼",
     mailboxBgHex: "#C0EEE8",
+    letterCardBgHex: "#F3D183",
     imageSrc: "/lv0_snowball.png",
     nextTierTarget: 1,
     remainingToNext: 1,

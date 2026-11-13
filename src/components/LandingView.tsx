@@ -173,13 +173,13 @@ export default function LandingView() {
           </section>
         )}
 
-        {/* 메인 타이틀 영역 */}
-        <div className="mt-2 mb-3 flex flex-col items-center">
+        {/* 메인 타이틀 영역 (하단 스노우볼이 눈언덕 바닥에 착지하도록 상단 여백 확보) */}
+        <div className="mt-6 mb-10 flex flex-col items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.png"
             alt="차곡차곡 크리스마스"
-            className="h-9 w-auto object-contain mb-2"
+            className="h-9 w-auto object-contain mb-2.5"
           />
           <p className="text-sm font-medium text-[#FAF0DC]/95">
             산타보다 빠른 우편함

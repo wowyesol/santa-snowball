@@ -263,15 +263,15 @@ function SnowballDetailContent() {
         </div>
       )}
 
-      <div className="flex flex-col px-5 pt-6 pb-12 break-keep">
+      <div className="flex flex-col px-5 pt-8 pb-12 break-keep">
         {isOwner && !isOwnLinkView ? (
           /* ================================================================
               [S04] 내 스노우볼 홈 (/snowball/[내slug])
              ================================================================ */
           <>
-            {/* 상단 타이틀 및 제미나이 인증 상태 배지 (수평·수직 정중앙 정렬) */}
-            <div className="w-full flex flex-col items-center justify-center text-center mb-4">
-              <h1 className="tracking-tight mb-3 text-center">
+            {/* 상단 타이틀 및 제미나이 인증 상태 배지 (수평·수직 정중앙 정렬 & 여유 간격 확대) */}
+            <div className="w-full flex flex-col items-center justify-center text-center">
+              <h1 className="tracking-tight text-center">
                 <span className="block text-3xl sm:text-4xl font-black text-white leading-tight break-keep">
                   {targetSnowball.nickname}의
                 </span>
@@ -280,10 +280,10 @@ function SnowballDetailContent() {
                 </span>
               </h1>
 
-              {/* ① 제미나이 인증 상태 배지 (타이틀 중앙 축에 맞춰 반듯하게 수평·수직 중앙 정렬) */}
+              {/* ① 제미나이 인증 상태 배지 (타이틀과 mt-4 간격, 아래 받은 편지 줄과 mt-12~14 대폭 간격 확보) */}
               <Link
                 href="/verify"
-                className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-extrabold leading-none text-center border transition-all active:scale-95 ${statusBadgeColorClass}`}
+                className={`mt-4 inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-extrabold leading-none text-center border transition-all active:scale-95 ${statusBadgeColorClass}`}
               >
                 <span className="inline-flex items-center justify-center leading-none">
                   {statusBadgeText}
@@ -291,8 +291,8 @@ function SnowballDetailContent() {
               </Link>
             </div>
 
-            {/* 받은 편지 N개 (좌측 확대) & 현재 스노우볼 레벨 Lv.n (우측 끝 대칭 배치) */}
-            <div className="w-full flex items-center justify-between gap-2 mb-1 px-1">
+            {/* 받은 편지 N개 (좌측 확대) & 현재 스노우볼 레벨 Lv.n (우측 끝 대칭 배치) — 배지 아래 간격을 대폭 넓혀 스노우볼이 배경 눈언덕 바닥에 착지하도록 배치 */}
+            <div className="mt-12 sm:mt-14 w-full flex items-center justify-between gap-2 mb-2 px-1">
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
@@ -301,8 +301,8 @@ function SnowballDetailContent() {
               </span>
             </div>
 
-            {/* ② 스노우볼 이미지 영역 (대폭 확대된 중앙 오브젝트) */}
-            <div className="my-2 flex justify-center">
+            {/* ② 스노우볼 이미지 영역 (배경 눈언덕 바닥에 자연스럽게 착지) */}
+            <div className="mt-1 mb-3 flex justify-center">
               <SnowballGraphic
                 level={targetSnowball.level}
                 letters={letters}
@@ -386,8 +386,8 @@ function SnowballDetailContent() {
               [S05] 친구 스노우볼 (/snowball/[친구slug] 또는 own-link)
              ================================================================ */
           <>
-            <div className="w-full flex flex-col items-center justify-center text-center mb-4">
-              <h1 className="tracking-tight mb-2.5 text-center">
+            <div className="w-full flex flex-col items-center justify-center text-center">
+              <h1 className="tracking-tight text-center">
                 <span className="block text-3xl sm:text-4xl font-black text-white leading-tight break-keep">
                   {targetSnowball.nickname}의
                 </span>
@@ -397,13 +397,13 @@ function SnowballDetailContent() {
               </h1>
 
               {isOwnLinkView && (
-                <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#2C2F63] border border-white/20 text-white text-[11px] font-bold leading-none">
+                <span className="mt-4 inline-flex items-center justify-center px-3.5 py-1 rounded-full bg-[#2C2F63] border border-white/20 text-white text-[11px] font-bold leading-none">
                   내 스노우볼
                 </span>
               )}
             </div>
 
-            <div className="w-full flex items-center justify-between gap-2 mb-1 px-1">
+            <div className="mt-12 sm:mt-14 w-full flex items-center justify-between gap-2 mb-2 px-1">
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
@@ -412,8 +412,8 @@ function SnowballDetailContent() {
               </span>
             </div>
 
-            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 */}
-            <div className="my-2 flex justify-center">
+            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 (배경 눈언덕 바닥에 착지) */}
+            <div className="mt-1 mb-3 flex justify-center">
               <SnowballGraphic
                 level={targetSnowball.level}
                 letters={letters}
@@ -568,7 +568,8 @@ function SnowballDetailContent() {
           P04 팝업: 우편함 열어보기
           - 바탕색을 스노우볼 단계별 받침대 상징색과 1:1 연동:
             Lv.0 민트(#C0EEE8) / Lv.1 핑크(#FBD0D8) / Lv.3 골드(#FAEBBF)
-          - 내부 각 편지지 카드는 다홍빛 빨강(#FA5E5E) + 흰색(#FFFFFF) 텍스트로 구성
+          - 내부 각 편지지 카드는 단계별 따뜻한 크림/골드 단색과 짙은 남색(#2C2F63) 텍스트로 구성:
+            Lv.0: #F3D183 / Lv.1: #FDF9EB / Lv.3: #FFFBF9
          ==================================================================== */}
       {isP04Open &&
         typeof document !== "undefined" &&
@@ -627,13 +628,14 @@ function SnowballDetailContent() {
                     {letters.map((item) => (
                       <div
                         key={item.id}
-                        className="p-3.5 rounded-2xl bg-[#FA5E5E] border border-white/30 text-white text-left shadow-md"
+                        style={{ backgroundColor: levelInfo.letterCardBgHex }}
+                        className="p-3.5 rounded-2xl border border-[#2C2F63]/15 text-[#2C2F63] text-left shadow-sm"
                       >
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-extrabold text-white">
+                          <span className="text-xs font-extrabold text-[#2C2F63]">
                             💌 {item.sender_name}
                           </span>
-                          <span className="text-[10px] font-bold text-white/90">
+                          <span className="text-[10px] font-bold text-[#2C2F63]/70">
                             {item.created_at
                               ? new Date(item.created_at).toLocaleDateString(
                                   "ko-KR",
@@ -642,9 +644,9 @@ function SnowballDetailContent() {
                               : ""}
                           </span>
                         </div>
-                        {/* 12월 1일 공개 전까지 편지 원문 스포일러 원천 차단 (고정 마스킹 + 흰색 블러 처리) */}
+                        {/* 12월 1일 공개 전까지 편지 원문 스포일러 원천 차단 (고정 마스킹 + 짙은 남색 #2C2F63 블러 처리) */}
                         <p
-                          className="text-xs text-white/95 leading-relaxed blur-[6px] select-none pointer-events-none"
+                          className="text-xs text-[#2C2F63]/75 leading-relaxed blur-[6px] select-none pointer-events-none"
                           aria-hidden="true"
                         >
                           12월 1일에 공개되는 비밀 크리스마스 메시지입니다. 조금만 기다려 주세요!

@@ -295,10 +295,10 @@ export default function VerifyPage() {
           <span
             className={`inline-flex items-center justify-center px-3.5 py-1 rounded-full text-[11px] font-extrabold leading-none text-center border ${
               isApproved
-                ? "bg-amber-400/25 border-amber-300 text-amber-200"
+                ? "bg-[#F3D183] border-[#E2B857] text-[#2C2F63]"
                 : isPending
-                ? "bg-[#3898FF]/25 border-[#66B2FF] text-sky-100"
-                : "bg-rose-500/25 border-rose-400 text-rose-100"
+                ? "bg-[#E8ECFA] border-white/40 text-[#2C2F63]"
+                : "bg-[#FA5E5E] border-[#FA5E5E] text-white"
             }`}
           >
             {statusBadgeText}
@@ -306,15 +306,15 @@ export default function VerifyPage() {
         </div>
 
         {/* ================================================================
-            상태 1: 승인 완료 (S08 · approved)
+            상태 1: 승인 완료 (S08 · approved — 그라데이션 제거, 깔끔한 단색 황금색 적용)
            ================================================================ */}
         {isApproved ? (
           <div className="space-y-3 text-left">
-            <div className="w-full p-5 rounded-2xl bg-gradient-to-br from-amber-400/30 via-[#52A7FF] to-[#3898FF] border border-amber-300/80 text-white shadow-lg">
-              <h2 className="text-base font-extrabold mb-1.5 leading-snug break-keep">
+            <div className="w-full p-5 rounded-2xl bg-[#F3D183] border-2 border-[#E2B857] text-[#2C2F63] shadow-lg">
+              <h2 className="text-base font-extrabold text-[#2C2F63] mb-1.5 leading-snug break-keep">
                 🎉 제미나이 대학생 플랜 인증이 완료(승인)되었습니다! (+100장 지급 완료)
               </h2>
-              <p className="text-xs text-white/95 leading-relaxed font-medium">
+              <p className="text-xs text-[#2C2F63]/90 leading-relaxed font-bold">
                 응모권 +100 · 사인업 LV +1 반영 완료
                 {existingVerif?.referrer_slug && (
                   <>
@@ -341,14 +341,14 @@ export default function VerifyPage() {
           </div>
         ) : isPending && existingVerif ? (
           /* ================================================================
-              상태 2: 심사 중 (S08 · pending)
+              상태 2: 심사 중 (S08 · pending — 그라데이션 없는 깔끔한 단색 적용)
              ================================================================ */
           <div className="space-y-3 text-left">
-            <div className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md border-l-4 border-[#1E88E5]">
-              <h2 className="text-sm font-extrabold text-[#102A4E] mb-1 leading-snug break-keep">
+            <div className="w-full p-4 rounded-2xl bg-white text-[#2C2F63] shadow-md border-2 border-[#2C2F63]/20">
+              <h2 className="text-sm font-extrabold text-[#2C2F63] mb-1 leading-snug break-keep">
                 ⏳ 현재 운영진이 영수증을 확인하고 있어요 (인증 대기중)
               </h2>
-              <p className="text-[11px] text-[#5B7493] leading-relaxed mb-4">
+              <p className="text-[11px] font-semibold text-[#2C2F63]/75 leading-relaxed mb-4">
                 {existingVerif.created_at
                   ? new Date(existingVerif.created_at).toLocaleString("ko-KR", {
                       month: "numeric",
@@ -363,7 +363,7 @@ export default function VerifyPage() {
               {existingVerif.image_url_1 &&
               (existingVerif.image_url_1.startsWith("http") ||
                 existingVerif.image_url_1.startsWith("data:image")) ? (
-                <div className="min-h-[160px] h-auto w-full rounded-xl border border-[#BFD8F5] bg-white overflow-hidden flex items-center justify-center p-1">
+                <div className="min-h-[160px] h-auto w-full rounded-xl border border-[#2C2F63]/15 bg-[#F8F9FE] overflow-hidden flex items-center justify-center p-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={existingVerif.image_url_1}
@@ -372,27 +372,27 @@ export default function VerifyPage() {
                   />
                 </div>
               ) : (
-                <div className="min-h-[112px] h-auto rounded-xl border border-[#BFD8F5] bg-[#E8F2FF] flex items-center justify-center text-xs font-bold text-[#102A4E] p-3 text-center">
+                <div className="min-h-[112px] h-auto rounded-xl border border-[#2C2F63]/15 bg-[#F4F6FC] flex items-center justify-center text-xs font-bold text-[#2C2F63] p-3 text-center">
                   제출된 주문 영수증 캡처 확인 중
                 </div>
               )}
 
               {existingVerif.referrer_slug && (
-                <p className="text-[11px] font-bold text-[#1E88E5] mt-2.5">
+                <p className="text-[11px] font-extrabold text-[#2C2F63] mt-2.5">
                   · 등록한 추천인 친구: {existingVerif.referrer_slug}
                 </p>
               )}
             </div>
 
-            <div className="w-full p-3.5 rounded-2xl bg-[#F4F9FF] text-[#0B1528] flex items-start gap-2.5 shadow-md">
-              <span className="w-5 h-5 rounded-full bg-[#1E88E5] text-white text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-full p-3.5 rounded-2xl bg-white border border-[#2C2F63]/15 text-[#2C2F63] flex items-start gap-2.5 shadow-md">
+              <span className="w-5 h-5 rounded-full bg-[#2C2F63] text-white text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">
                 !
               </span>
               <div>
-                <p className="text-xs font-extrabold text-[#102A4E]">
+                <p className="text-xs font-extrabold text-[#2C2F63]">
                   허위 인증 시 응모권 회수 · 당첨 취소
                 </p>
-                <p className="text-[11px] text-[#5B7493]">
+                <p className="text-[11px] font-semibold text-[#2C2F63]/75">
                   추첨 전 최종 검수에서 확인되면 지급된 응모권도 회수돼요.
                 </p>
               </div>
@@ -407,17 +407,17 @@ export default function VerifyPage() {
           </div>
         ) : (
           /* ================================================================
-              상태 3 & 4: 미제출(ready) 또는 반려됨(rejected -> 재제출 허용)
+              상태 3 & 4: 미제출(ready) 또는 반려됨(rejected — 그라데이션 없는 깔끔한 단색 붉은색 적용)
              ================================================================ */
           <form onSubmit={handleSubmit} className="space-y-4 text-left">
             {/* 반려됨 안내 카드 (S08 · rejected) */}
             {isRejected && (
-              <div className="w-full p-4 rounded-2xl bg-rose-50 text-[#0B1528] shadow-md border-2 border-red-500">
-                <h2 className="text-sm font-extrabold text-red-700 mb-1.5 leading-snug break-keep">
+              <div className="w-full p-4 rounded-2xl bg-[#FFE5E5] text-[#2C2F63] shadow-md border-2 border-[#FA5E5E]">
+                <h2 className="text-sm font-extrabold text-[#991B1B] mb-1.5 leading-snug break-keep">
                   ⚠️ 이전 인증이 반려되었습니다. 안내 사항을 확인 후 영수증을 다시 제출해 주세요.
                 </h2>
                 {existingVerif?.reject_reason && (
-                  <p className="text-xs font-bold text-red-900">
+                  <p className="text-xs font-extrabold text-[#991B1B]">
                     사유: {existingVerif.reject_reason}
                   </p>
                 )}
