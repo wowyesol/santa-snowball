@@ -291,8 +291,8 @@ function SnowballDetailContent() {
               </Link>
             </div>
 
-            {/* 받은 편지 N개 (좌측 확대) & 현재 스노우볼 레벨 Lv.n (우측 끝 대칭 배치) */}
-            <div className="mt-11 sm:mt-12 w-full flex items-center justify-between gap-2 px-1">
+            {/* 받은 편지 N개 (좌측 확대) & 현재 스노우볼 레벨 Lv.n (우측 끝 대칭 배치) - 인증 배지와의 간격을 좁혀 위로 올림 */}
+            <div className="mt-3.5 sm:mt-4 w-full flex items-center justify-between gap-2 px-1">
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
@@ -301,8 +301,8 @@ function SnowballDetailContent() {
               </span>
             </div>
 
-            {/* ② 스노우볼 이미지 영역 (하단 흰 눈언덕 바닥에 받침대가 안정적으로 안착하도록 위치 하향 조정) */}
-            <div className="mt-1 mb-2 flex justify-center">
+            {/* ② 스노우볼 이미지 영역 (위쪽 줄이 올라간 만큼 상단 마진을 확보해 스노우볼 하단 받침대가 눈언덕 바닥에 놓인 위치는 그대로 유지) */}
+            <div className="mt-8 sm:mt-9 mb-2 flex justify-center">
               <SnowballGraphic
                 level={targetSnowball.level}
                 letters={letters}
@@ -403,7 +403,8 @@ function SnowballDetailContent() {
               )}
             </div>
 
-            <div className="mt-11 sm:mt-12 w-full flex items-center justify-between gap-2 px-1">
+            {/* 받은 편지 N개 & Lv.n 줄을 위로 올리고, 아래 스노우볼과의 간격을 확보해 스노우볼 눈언덕 착지 위치 유지 */}
+            <div className="mt-3.5 sm:mt-4 w-full flex items-center justify-between gap-2 px-1">
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
@@ -412,8 +413,8 @@ function SnowballDetailContent() {
               </span>
             </div>
 
-            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 (하단 흰 눈언덕 바닥에 받침대가 안정적으로 안착하도록 위치 하향 조정) */}
-            <div className="mt-1 mb-2 flex justify-center">
+            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 (하단 흰 눈언덕 바닥에 받침대가 안정적으로 안착하도록 위치 유지) */}
+            <div className="mt-8 sm:mt-9 mb-2 flex justify-center">
               <SnowballGraphic
                 level={targetSnowball.level}
                 letters={letters}

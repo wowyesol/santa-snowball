@@ -200,33 +200,36 @@ export default function ReferralPage() {
           </p>
         </section>
 
-        {/* 3. 업그레이드 미리보기 카드 (Lv.0 민트 / Lv.1 핑크 / Lv.3 골드) */}
+        {/* 3. 업그레이드 미리보기 카드 (Lv.0 민트 / Lv.1 핑크 / Lv.3 골드 - 캐시 방지 ?v=2 적용 및 선명한 프리뷰) */}
         <section className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)] mb-3 text-left">
           <h2 className="text-xs font-extrabold text-[#2C2F63] mb-3">
             업그레이드 미리보기
           </h2>
 
-          <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="grid grid-cols-3 gap-2.5 text-center">
             {[
               {
-                img: "/lv0_snowball.png",
+                img: "/lv0_snowball.png?v=2",
                 title: "Lv.0",
+                sub: "민트",
                 reached: levelInfo.rawLevel >= 0,
               },
               {
-                img: "/lv1_snowball.png",
+                img: "/lv1_snowball.png?v=2",
                 title: "Lv.1",
+                sub: "핑크",
                 reached: levelInfo.rawLevel >= 1,
               },
               {
-                img: "/lv3_snowball.png",
+                img: "/lv3_snowball.png?v=2",
                 title: "Lv.3",
+                sub: "골드",
                 reached: levelInfo.rawLevel >= 3,
               },
             ].map((item) => (
               <div key={item.title} className="flex flex-col items-center">
                 <div
-                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full border flex items-center justify-center p-1.5 mb-1.5 ${
+                  className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border flex items-center justify-center p-1.5 mb-1.5 ${
                     item.reached
                       ? "border-[#2C2F63] bg-[#E8ECFA] shadow-xs"
                       : "border-dashed border-[#2C2F63]/35 bg-[#F4F6FC]"
@@ -235,12 +238,15 @@ export default function ReferralPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.img}
-                    alt={item.title}
-                    className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
+                    alt={`${item.title} ${item.sub} 스노우볼`}
+                    className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
                   />
                 </div>
                 <span className="text-xs font-extrabold text-[#2C2F63] leading-tight break-keep">
                   {item.title}
+                </span>
+                <span className="text-[10px] font-bold text-[#2C2F63]/70 leading-tight mt-0.5">
+                  {item.sub}
                 </span>
               </div>
             ))}

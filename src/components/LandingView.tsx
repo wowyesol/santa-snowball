@@ -190,7 +190,7 @@ export default function LandingView() {
         <SnowballGraphic
           level={isFriendInvite && friendSnowball ? friendSnowball.level : 3}
           overrideImageSrc={
-            isFriendInvite && friendSnowball ? undefined : "/lv3_snowball.png"
+            isFriendInvite && friendSnowball ? undefined : "/lv3_snowball.png?v=2"
           }
           size="lg"
         />

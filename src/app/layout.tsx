@@ -5,7 +5,7 @@ const SITE_URL = "https://santa-snowball.vercel.app";
 const DEFAULT_TITLE = "차곡차곡 크리스마스 | 산타보다 빠른 우편함";
 const DEFAULT_DESCRIPTION =
   "친구들과 따뜻한 연말 편지를 나누고 크리스마스 선물에도 응모해 보세요!";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/api/og`;
+const DEFAULT_OG_IMAGE = `${SITE_URL}/api/og?v=2`;
 
 // 루트 페이지 기본 메타데이터(Metadata) 및 Open Graph 설정
 export const metadata: Metadata = {
