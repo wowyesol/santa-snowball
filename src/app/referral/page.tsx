@@ -15,6 +15,7 @@ import {
 
 interface ReferralLeaderItem {
   rank: number;
+  isTied: boolean;
   nickname: string;
   referralCount: number;
 }
@@ -23,6 +24,7 @@ interface MyReferralRankRecord {
   nickname: string;
   referralCount: number;
   rank: number | null;
+  isTied: boolean;
 }
 
 /**
@@ -230,7 +232,7 @@ export default function ReferralPage() {
           </p>
         </section>
 
-        {/* 3. 업그레이드 미리보기 카드 (Lv.0 민트 / Lv.1 핑크 / Lv.3 골드 - 캐시 방지 ?v=2 적용 및 선명한 프리뷰) */}
+        {/* 3. 업그레이드 미리보기 카드 (Lv.0 / Lv.1 / Lv.3 - 색상 이름 텍스트 제거, 스노우볼 일러스트와 레벨 표기만 깔끔하게 표시) */}
         <section className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)] mb-3 text-left">
           <h2 className="text-xs font-extrabold text-[#2C2F63] mb-3">
             업그레이드 미리보기
@@ -241,19 +243,16 @@ export default function ReferralPage() {
               {
                 img: "/lv0_snowball.png?v=2",
                 title: "Lv.0",
-                sub: "민트",
                 reached: levelInfo.rawLevel >= 0,
               },
               {
                 img: "/lv1_snowball.png?v=2",
                 title: "Lv.1",
-                sub: "핑크",
                 reached: levelInfo.rawLevel >= 1,
               },
               {
                 img: "/lv3_snowball.png?v=2",
                 title: "Lv.3",
-                sub: "골드",
                 reached: levelInfo.rawLevel >= 3,
               },
             ].map((item) => (
@@ -268,15 +267,12 @@ export default function ReferralPage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.img}
-                    alt={`${item.title} ${item.sub} 스노우볼`}
+                    alt={`${item.title} 스노우볼`}
                     className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
                   />
                 </div>
                 <span className="text-xs font-extrabold text-[#2C2F63] leading-tight break-keep">
                   {item.title}
-                </span>
-                <span className="text-[10px] font-bold text-[#2C2F63]/70 leading-tight mt-0.5">
-                  {item.sub}
                 </span>
               </div>
             ))}
@@ -354,14 +350,16 @@ export default function ReferralPage() {
             </span>
           </div>
 
-          {/* 내 현재 기록 안내 박스 */}
+          {/* 내 현재 기록 안내 박스 (10줄 밖에 있더라도 실제 공동 순위 정확히 표시) */}
           <div className="w-full p-3 rounded-xl bg-[#E8ECFA]/80 border border-[#2C2F63]/15 mb-3">
             {myRankRecord &&
             myRankRecord.referralCount >= 1 &&
             myRankRecord.rank !== null ? (
               <p className="text-xs font-extrabold text-[#2C2F63] text-center break-keep">
-                내 현재 기록: {myRankRecord.referralCount}명 초대 · 현재{" "}
-                {myRankRecord.rank}위
+                내 현재 기록: {myRankRecord.referralCount}명 초대 ·{" "}
+                {myRankRecord.isTied
+                  ? `공동 ${myRankRecord.rank}위`
+                  : `현재 ${myRankRecord.rank}위`}
               </p>
             ) : (
               <p className="text-xs font-extrabold text-[#2C2F63] text-center break-keep">
@@ -392,6 +390,10 @@ export default function ReferralPage() {
                     ? "🥉"
                     : null;
 
+                const rankLabel = leader.isTied
+                  ? `공동 ${leader.rank}위`
+                  : `${leader.rank}위`;
+
                 const rowBgClass =
                   leader.rank === 1
                     ? "bg-[#FAEBBF]/75 border-[#E5C778]"
@@ -408,19 +410,15 @@ export default function ReferralPage() {
                     key={`${leader.rank}-${leader.nickname}`}
                     className={`px-3.5 py-2.5 rounded-xl border flex items-center justify-between gap-2 ${rowBgClass}`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      {medal ? (
-                        <span
-                          className="w-6 text-center text-base leading-none shrink-0"
-                          aria-label={`${leader.rank}위`}
-                        >
-                          {medal}
-                        </span>
-                      ) : (
-                        <span className="w-6 text-center text-xs font-extrabold text-[#2C2F63]/75 shrink-0">
-                          {leader.rank}위
-                        </span>
-                      )}
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="inline-flex items-center gap-1 shrink-0 text-xs font-extrabold text-[#2C2F63]">
+                        {medal && (
+                          <span className="text-base leading-none" aria-hidden="true">
+                            {medal}
+                          </span>
+                        )}
+                        <span>{rankLabel}</span>
+                      </span>
 
                       <span className="text-xs font-extrabold text-[#2C2F63] truncate">
                         {leader.nickname}
