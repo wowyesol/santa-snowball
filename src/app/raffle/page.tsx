@@ -149,12 +149,12 @@ export default function RafflePage() {
   return (
     <AppShell>
       <div className="flex flex-col px-5 pt-6 pb-12 break-keep">
-        {/* 상단 타이틀 */}
-        <div className="text-center mb-5">
-          <h1 className="text-2xl font-extrabold text-white tracking-tight mb-1.5">
+        {/* 상단 타이틀 (배경 우측 산타 썰매와 겹쳐도 100% 선명하게 읽히도록 순백색 + 진한 네이비 그림자 및 반투명 네이비 배경 적용) */}
+        <div className="text-center mb-5 flex flex-col items-center">
+          <h1 className="text-2xl font-extrabold text-white tracking-tight mb-2 drop-shadow-[0_2px_6px_rgba(15,18,45,0.95)]">
             크리스마스 선물 응모
           </h1>
-          <p className="text-xs text-sky-100/90 leading-relaxed break-keep">
+          <p className="inline-block px-3.5 py-1.5 rounded-xl bg-[#1A1E43]/65 text-xs font-medium text-white leading-relaxed break-keep drop-shadow-[0_2px_6px_rgba(15,18,45,0.95)]">
             모든 응모권을 원하는 경품에 나눠 사용해 보세요.
             <br />
             ⓘ 응모권을 많이 사용할수록 당첨 확률이 높아져요.
@@ -221,16 +221,14 @@ export default function RafflePage() {
                 key={prize.id}
                 className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md text-left"
               >
-                {/* 상단 상품 브랜드 로고 아이콘 & 정보 */}
+                {/* 상단 상품 브랜드 로고 아이콘(이중 박스 없이 단일 둥근 사각형) & 정보 */}
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-14 h-14 rounded-2xl border border-[#BFD8F5] bg-white flex items-center justify-center p-1.5 shrink-0 shadow-2xs overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={prize.logoSrc}
-                      alt={prize.shortTitle}
-                      className="w-full h-full object-contain rounded-xl"
-                    />
-                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={prize.logoSrc}
+                    alt={prize.shortTitle}
+                    className="w-12 h-12 rounded-xl object-cover shrink-0"
+                  />
 
                   <div className="min-w-0 flex-1">
                     <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#2C2F63] text-white text-[10px] font-extrabold mb-1">

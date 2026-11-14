@@ -6,6 +6,59 @@ import path from "path";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// 밤하늘 배경에 내리는 불투명 순백색(#FFFFFF) 눈송이 좌표 (1200x630 기준)
+const SKY_SNOWFLAKES = [
+  { left: 75, top: 55, w: 9, h: 7, radius: "58% 42% 63% 37%" },
+  { left: 155, top: 135, w: 5, h: 5, radius: "50%" },
+  { left: 235, top: 75, w: 11, h: 9, radius: "44% 56% 39% 61%" },
+  { left: 110, top: 225, w: 7, h: 6, radius: "64% 36% 52% 48%" },
+  { left: 265, top: 195, w: 6, h: 5, radius: "49% 51% 62% 38%" },
+  { left: 335, top: 95, w: 8, h: 7, radius: "37% 63% 55% 45%" },
+  { left: 185, top: 310, w: 9, h: 8, radius: "61% 39% 44% 56%" },
+  { left: 305, top: 295, w: 6, h: 5, radius: "58% 42% 63% 37%" },
+  { left: 85, top: 355, w: 5, h: 5, radius: "50%" },
+  { left: 865, top: 70, w: 9, h: 7, radius: "58% 42% 63% 37%" },
+  { left: 945, top: 145, w: 6, h: 5, radius: "44% 56% 39% 61%" },
+  { left: 1035, top: 85, w: 10, h: 8, radius: "64% 36% 52% 48%" },
+  { left: 1120, top: 165, w: 7, h: 6, radius: "49% 51% 62% 38%" },
+  { left: 895, top: 235, w: 8, h: 7, radius: "37% 63% 55% 45%" },
+  { left: 1010, top: 265, w: 11, h: 9, radius: "61% 39% 44% 56%" },
+  { left: 1105, top: 315, w: 6, h: 5, radius: "58% 42% 63% 37%" },
+  { left: 935, top: 345, w: 5, h: 5, radius: "50%" },
+];
+
+// 스노우볼 원형 유리구 안쪽에 소복하게 흩날리는 크고 작은 불투명 순백색(#FFFFFF) 눈송이 좌표
+// (유리구 중심 약 X: 600, Y: 295, 반경 약 170px 내부)
+const GLOBE_SNOWFLAKES = [
+  { left: 530, top: 165, w: 6, h: 5, radius: "58% 42% 63% 37%" },
+  { left: 585, top: 150, w: 4, h: 4, radius: "50%" },
+  { left: 645, top: 168, w: 7, h: 6, radius: "44% 56% 39% 61%" },
+  { left: 485, top: 205, w: 5, h: 4, radius: "64% 36% 52% 48%" },
+  { left: 555, top: 200, w: 8, h: 7, radius: "49% 51% 62% 38%" },
+  { left: 620, top: 195, w: 5, h: 5, radius: "50%" },
+  { left: 690, top: 210, w: 6, h: 5, radius: "37% 63% 55% 45%" },
+  { left: 460, top: 255, w: 7, h: 6, radius: "61% 39% 44% 56%" },
+  { left: 515, top: 245, w: 4, h: 4, radius: "50%" },
+  { left: 575, top: 240, w: 5, h: 4, radius: "58% 42% 63% 37%" },
+  { left: 640, top: 245, w: 8, h: 7, radius: "44% 56% 39% 61%" },
+  { left: 715, top: 255, w: 5, h: 5, radius: "50%" },
+  { left: 450, top: 305, w: 5, h: 4, radius: "64% 36% 52% 48%" },
+  { left: 495, top: 295, w: 8, h: 7, radius: "49% 51% 62% 38%" },
+  { left: 545, top: 285, w: 4, h: 4, radius: "50%" },
+  { left: 605, top: 290, w: 6, h: 5, radius: "37% 63% 55% 45%" },
+  { left: 665, top: 295, w: 5, h: 4, radius: "61% 39% 44% 56%" },
+  { left: 725, top: 305, w: 7, h: 6, radius: "58% 42% 63% 37%" },
+  { left: 470, top: 350, w: 6, h: 5, radius: "44% 56% 39% 61%" },
+  { left: 525, top: 340, w: 5, h: 5, radius: "50%" },
+  { left: 585, top: 345, w: 7, h: 6, radius: "64% 36% 52% 48%" },
+  { left: 645, top: 338, w: 4, h: 4, radius: "50%" },
+  { left: 700, top: 348, w: 8, h: 7, radius: "49% 51% 62% 38%" },
+  { left: 510, top: 385, w: 5, h: 4, radius: "37% 63% 55% 45%" },
+  { left: 565, top: 390, w: 6, h: 5, radius: "61% 39% 44% 56%" },
+  { left: 625, top: 382, w: 5, h: 5, radius: "50%" },
+  { left: 675, top: 388, w: 6, h: 5, radius: "58% 42% 63% 37%" },
+];
+
 function getSnowballFilenameByLevel(levelParam: string | null): string {
   const lv = Number(levelParam);
   if (!Number.isNaN(lv)) {
@@ -89,6 +142,22 @@ export async function GET(req: NextRequest) {
             }}
           />
 
+          {/* 밤하늘 배경에 내리는 불투명 순백색(#FFFFFF) 눈송이 점 */}
+          {SKY_SNOWFLAKES.map((dot, idx) => (
+            <div
+              key={`sky-${idx}`}
+              style={{
+                position: "absolute",
+                left: `${dot.left}px`,
+                top: `${dot.top}px`,
+                width: `${dot.w}px`,
+                height: `${dot.h}px`,
+                borderRadius: dot.radius,
+                backgroundColor: "#FFFFFF",
+              }}
+            />
+          ))}
+
           {/* 스노우볼 일러스트 (width: 515px, height: 515px, 하단 눈언덕 지면 바로 위에 받침대가 안정감 있게 안착) */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -105,6 +174,22 @@ export async function GET(req: NextRequest) {
               objectFit: "contain",
             }}
           />
+
+          {/* 스노우볼 유리구 안에 소복하게 내리는 크고 작은 불투명 순백색(#FFFFFF) 눈송이 점 */}
+          {GLOBE_SNOWFLAKES.map((dot, idx) => (
+            <div
+              key={`globe-${idx}`}
+              style={{
+                position: "absolute",
+                left: `${dot.left}px`,
+                top: `${dot.top}px`,
+                width: `${dot.w}px`,
+                height: `${dot.h}px`,
+                borderRadius: dot.radius,
+                backgroundColor: "#FFFFFF",
+              }}
+            />
+          ))}
         </div>
       ),
       {

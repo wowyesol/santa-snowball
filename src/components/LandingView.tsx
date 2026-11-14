@@ -183,12 +183,10 @@ export default function LandingView() {
           </p>
         </div>
 
-        {/* 중앙 스노우볼 이미지 (친구 초대 시 친구의 현재 레벨 0/1/3 스노우볼 미리보기, 일반 진입 시 기본 대표 스노우볼) */}
+        {/* 중앙 스노우볼 이미지 (로그인 전 홈 랜딩 화면은 최종 목표 단계인 3단계 골드 스노우볼 Lv.3로 통일) */}
         <SnowballGraphic
-          level={isFriendInvite && friendSnowball ? friendSnowball.level : 3}
-          overrideImageSrc={
-            isFriendInvite && friendSnowball ? undefined : "/lv3_snowball.png?v=2"
-          }
+          level={3}
+          overrideImageSrc="/lv3_snowball.png?v=2"
           size="lg"
         />
 

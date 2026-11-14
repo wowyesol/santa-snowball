@@ -18,6 +18,34 @@ interface AppShellProps {
   hideFooter?: boolean;
 }
 
+// 페이지 이동 간에도 배경음악(/bgm.mp3)이 절대 끊기거나 처음부터 다시 시작되지 않도록 유지하는 전역 오디오 싱글톤
+let globalBgmAudio: HTMLAudioElement | null = null;
+let globalBgmMuted = false;
+
+function getOrCreateGlobalBgm(): HTMLAudioElement | null {
+  if (typeof window === "undefined") return null;
+  if (!globalBgmAudio) {
+    const existing = document.getElementById(
+      "santa-global-bgm"
+    ) as HTMLAudioElement | null;
+    if (existing) {
+      globalBgmAudio = existing;
+    } else {
+      const audio = document.createElement("audio");
+      audio.id = "santa-global-bgm";
+      audio.src = "/bgm.mp3";
+      audio.loop = true;
+      audio.preload = "auto";
+      audio.volume = 0.35;
+      audio.style.display = "none";
+      document.body.appendChild(audio);
+      globalBgmAudio = audio;
+    }
+  }
+  globalBgmAudio.volume = 0.35;
+  return globalBgmAudio;
+}
+
 // 상단 좌측에 '< 이전' 버튼을 노출할 서브 화면 경로 목록
 const SUB_ROUTES = new Set([
   "/inapp",
@@ -48,9 +76,15 @@ export default function AppShell({
 
   const [auth, setAuth] = useState<AuthSnowballState | null>(null);
   const [isSavingPhoto, setIsSavingPhoto] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(globalBgmMuted);
+  const [isOwnLinkMode, setIsOwnLinkMode] = useState<boolean>(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const syncHeader = useCallback(async () => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      setIsOwnLinkMode(params.get("mode") === "own-link");
+    }
     const current = await getCurrentAuthAndSnowball();
     setAuth(current);
     // 메인 사이트 최초 진입 시 세션당 1회 'page_view' 기록 (/admin 제외, sessionStorage 중복 방지)
@@ -58,6 +92,81 @@ export default function AppShell({
       logPageViewOncePerSession(current.snowball?.slug ?? null);
     }
   }, [pathname]);
+
+  // 배경음악(/bgm.mp3) 마운트 시 자동 재생 시도 & 브라우저 정책 대기 시 첫 터치/클릭 즉시 재생
+  useEffect(() => {
+    if (typeof window === "undefined" || pathname === "/admin") return;
+
+    const audio = getOrCreateGlobalBgm();
+    if (!audio) return;
+
+    setIsMuted(globalBgmMuted);
+    audio.muted = globalBgmMuted;
+
+    const tryPlayBgm = () => {
+      if (globalBgmMuted) return;
+      audio.volume = 0.35;
+      audio.muted = false;
+      if (audio.paused) {
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // 첫 사용자 인터랙션 대기
+          });
+        }
+      }
+    };
+
+    // 1) 마운트 즉시 재생 시도
+    tryPlayBgm();
+
+    // 2) 화면 아무 곳이나 처음 한 번 터치/클릭하는 즉시 음악 재생 (사용자가 음소거한 경우는 제외)
+    const handleFirstInteraction = () => {
+      if (globalBgmMuted) return;
+      tryPlayBgm();
+      if (!audio.paused) {
+        window.removeEventListener("pointerdown", handleFirstInteraction);
+        window.removeEventListener("touchstart", handleFirstInteraction);
+        window.removeEventListener("click", handleFirstInteraction);
+      }
+    };
+
+    window.addEventListener("pointerdown", handleFirstInteraction, {
+      passive: true,
+    });
+    window.addEventListener("touchstart", handleFirstInteraction, {
+      passive: true,
+    });
+    window.addEventListener("click", handleFirstInteraction, { passive: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", handleFirstInteraction);
+      window.removeEventListener("touchstart", handleFirstInteraction);
+      window.removeEventListener("click", handleFirstInteraction);
+    };
+  }, [pathname]);
+
+  // 우측 상단 초소형 음소거 버튼 토글 핸들러
+  const handleToggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const audio = getOrCreateGlobalBgm();
+    const nextMuted = !globalBgmMuted;
+    globalBgmMuted = nextMuted;
+    setIsMuted(nextMuted);
+
+    if (!audio) return;
+    if (nextMuted) {
+      audio.muted = true;
+      audio.pause();
+    } else {
+      audio.volume = 0.35;
+      audio.muted = false;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {});
+      }
+    }
+  };
 
   // 상단 헤더 [📷 사진 저장] 클릭 시: 원본 배경 이미지(bgImg.naturalWidth x bgImg.naturalHeight) 비율 그대로
   // 상단 타이틀([닉네임]의\n스노우볼) + 스노우볼(가로 폭의 88%, 하단 5% 지점 착지) + 눈송이를 그려 PNG로 즉시 저장
@@ -235,6 +344,15 @@ export default function AppShell({
 
   const showBackButton = Boolean(pathname && SUB_ROUTES.has(pathname));
 
+  // [📷 사진 저장] 버튼 노출 조건: 오직 로그인한 본인의 '내 스노우볼 메인 화면(S04)'에서만 노출
+  const decodedPathname = pathname ? decodeURIComponent(pathname) : "";
+  const isMySnowballMainPage = Boolean(
+    auth?.isAuthenticated &&
+      auth?.snowball &&
+      decodedPathname === `/snowball/${auth.snowball.slug}` &&
+      !isOwnLinkMode
+  );
+
   const handleBackNavigation = () => {
     if (pathname === "/login") {
       if (typeof window !== "undefined") {
@@ -292,23 +410,62 @@ export default function AppShell({
             </Link>
           </div>
 
-          {auth?.snowball ? (
+          <div className="flex items-center gap-2 shrink-0">
+            {/* 오직 로그인한 본인의 '내 스노우볼 메인 화면(S04)'에서만 [📷 사진 저장] 버튼 노출 */}
+            {isMySnowballMainPage && (
+              <button
+                type="button"
+                onClick={handleSaveSnowballPhoto}
+                disabled={isSavingPhoto}
+                className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#FCEED8] text-[#2C2F63] text-[11px] font-extrabold shadow-xs hover:bg-white active:scale-95 transition-all shrink-0 disabled:opacity-60"
+              >
+                {isSavingPhoto ? "저장 중..." : "📷 사진 저장"}
+              </button>
+            )}
+
+            {/* 초소형 원형 음소거 토글 버튼 (28px, #2C2F63 남색 배경 + 흰색 선형 스피커 SVG 아이콘) */}
             <button
               type="button"
-              onClick={handleSaveSnowballPhoto}
-              disabled={isSavingPhoto}
-              className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#FCEED8] text-[#2C2F63] text-[11px] font-extrabold shadow-xs hover:bg-white active:scale-95 transition-all shrink-0 disabled:opacity-60"
+              onClick={handleToggleMute}
+              aria-label={isMuted ? "배경음악 켜기" : "배경음악 끄기"}
+              title={isMuted ? "배경음악 켜기" : "배경음악 끄기"}
+              className="w-7 h-7 rounded-full bg-[#2C2F63] border border-white/20 text-white/85 hover:text-white flex items-center justify-center shadow-2xs active:scale-95 transition-all shrink-0"
             >
-              {isSavingPhoto ? "저장 중..." : "📷 사진 저장"}
+              {isMuted ? (
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <line x1="23" y1="9" x2="17" y2="15" />
+                  <line x1="17" y1="9" x2="23" y2="15" />
+                </svg>
+              ) : (
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                </svg>
+              )}
             </button>
-          ) : (
-            <Link
-              href="/guide"
-              className="px-3 py-1 rounded-full bg-[#FCEED8] text-[#2C2F63] text-[11px] font-extrabold shadow-xs hover:bg-white transition-colors shrink-0"
-            >
-              이벤트 안내
-            </Link>
-          )}
+          </div>
         </header>
 
         {/* 2) 마감 안내 띠 배너 (#2C2F63 크레용 남색 톤) */}

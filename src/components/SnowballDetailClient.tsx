@@ -471,10 +471,13 @@ function SnowballDetailContent() {
                 </span>
               </h1>
 
-              {isOwnLinkView && (
-                <span className="mt-4 inline-flex items-center justify-center px-3.5 py-1 rounded-full bg-[#2C2F63] border border-white/20 text-white text-[11px] font-bold leading-none">
+              {isOwnLinkView ? (
+                <span className="mt-4 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#2C2F63] border border-white/20 text-white text-xs font-extrabold leading-none">
                   내 스노우볼
                 </span>
+              ) : (
+                /* S04의 제미나이 인증 배지(mt-4 + 높이 26px)와 동일한 기준점 여백을 확보해 친구 스노우볼도 눈언덕 바닥에 100% 동일하게 착지 */
+                <div className="mt-4 h-[26px]" aria-hidden="true" />
               )}
             </div>
 

@@ -176,7 +176,7 @@ export default function FairyOverlay({
 
   return (
     <div
-      className="pointer-events-none absolute -top-[185px] sm:-top-[205px] left-1/2 -translate-x-1/2 w-[360px] sm:w-[400px] z-30 flex items-center justify-center select-none"
+      className="pointer-events-none absolute -top-[120px] sm:-top-[135px] left-1/2 -translate-x-1/2 w-[225px] sm:w-[250px] z-30 flex items-center justify-center select-none"
       aria-hidden="true"
     >
       <video
