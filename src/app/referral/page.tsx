@@ -13,17 +13,34 @@ import {
   logEventAsync,
 } from "@/lib/supabase";
 
+interface ReferralLeaderItem {
+  rank: number;
+  nickname: string;
+  referralCount: number;
+}
+
+interface MyReferralRankRecord {
+  nickname: string;
+  referralCount: number;
+  rank: number | null;
+}
+
 /**
  * S07 추천 현황 (/referral)
  * - 내 닉네임 복사 + 공유 링크 복사
- * - 사인업 레벨 진행바: LV0 -> LV1(1명) -> LV3(3명) -> LV10(10명)
- * - 업그레이드 단계 미리보기: LV1(파랑) / LV3(빨강) / LV10(황금) 실제 스노우볼 이미지 표시
+ * - 사인업 레벨 진행바: Lv.0 -> Lv.1 -> Lv.3
+ * - 업그레이드 단계 미리보기: Lv.0(민트) / Lv.1(핑크) / Lv.3(골드) 실제 스노우볼 이미지 표시
  * - 나를 추천인으로 입력한 친구 N명 목록 (승인 +50 · LV+1 / 인증 심사 중)
+ * - 🏆 실시간 산타 초대 랭킹 (TOP 10 + 내 현재 기록/순위)
  */
 export default function ReferralPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [mySnowball, setMySnowball] = useState<Snowball | null>(null);
   const [referrals, setReferrals] = useState<GeminiVerification[]>([]);
+  const [leaders, setLeaders] = useState<ReferralLeaderItem[]>([]);
+  const [myRankRecord, setMyRankRecord] = useState<MyReferralRankRecord | null>(
+    null
+  );
   const [shareUrl, setShareUrl] = useState<string>("");
   const [copiedType, setCopiedType] = useState<"nick" | "link" | null>(null);
 
@@ -33,13 +50,26 @@ export default function ReferralPage() {
     const sb = auth.snowball;
 
     if (sb) {
-      const [syncedLevel, list] = await Promise.all([
+      const leaderboardPromise = fetch(
+        `/api/referral/leaderboard?nickname=${encodeURIComponent(sb.nickname)}`,
+        { cache: "no-store" }
+      )
+        .then((res) => (res.ok ? res.json() : null))
+        .catch(() => null);
+
+      const [syncedLevel, list, leaderboardData] = await Promise.all([
         computeAndSyncSnowballLevel(sb),
         getMyReferralVerifications(sb.nickname),
+        leaderboardPromise,
       ]);
       const updatedSb: Snowball = { ...sb, level: syncedLevel };
       setMySnowball(updatedSb);
       setReferrals(list);
+
+      if (leaderboardData) {
+        setLeaders(Array.isArray(leaderboardData.leaders) ? leaderboardData.leaders : []);
+        setMyRankRecord(leaderboardData.myRecord ?? null);
+      }
 
       if (typeof window !== "undefined") {
         setShareUrl(
@@ -254,7 +284,7 @@ export default function ReferralPage() {
         </section>
 
         {/* 4. 내 추천 친구 목록 (하단 눈밭 위에서도 선명하게 보이도록 화이트 카드 & #2C2F63 대비 적용) */}
-        <section className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)] text-left mb-5">
+        <section className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)] text-left mb-3">
           <h2 className="text-xs font-extrabold text-[#2C2F63] mb-2.5">
             내 추천 친구 {referrals.length}명
           </h2>
@@ -306,6 +336,106 @@ export default function ReferralPage() {
                         인증 심사 중
                       </span>
                     )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* 5. 🏆 실시간 산타 초대 랭킹 (TOP 10 & 내 현재 기록) */}
+        <section className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)] text-left mb-5">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h2 className="text-xs font-extrabold text-[#2C2F63]">
+              🏆 실시간 산타 초대 랭킹
+            </h2>
+            <span className="px-2.5 py-0.5 rounded-full bg-[#E8ECFA] text-[#2C2F63] text-[10px] font-extrabold">
+              TOP 10
+            </span>
+          </div>
+
+          {/* 내 현재 기록 안내 박스 */}
+          <div className="w-full p-3 rounded-xl bg-[#E8ECFA]/80 border border-[#2C2F63]/15 mb-3">
+            {myRankRecord &&
+            myRankRecord.referralCount >= 1 &&
+            myRankRecord.rank !== null ? (
+              <p className="text-xs font-extrabold text-[#2C2F63] text-center break-keep">
+                내 현재 기록: {myRankRecord.referralCount}명 초대 · 현재{" "}
+                {myRankRecord.rank}위
+              </p>
+            ) : (
+              <p className="text-xs font-extrabold text-[#2C2F63] text-center break-keep">
+                첫 친구를 초대하고 랭킹에 이름을 올려보세요!
+              </p>
+            )}
+          </div>
+
+          {leaders.length === 0 ? (
+            <div className="w-full py-6 px-4 rounded-xl border border-dashed border-[#2C2F63]/20 bg-[#F8F9FE] text-center">
+              <p className="text-xs font-extrabold text-[#2C2F63] mb-1">
+                아직 집계된 초대 랭킹이 없어요
+              </p>
+              <p className="text-[11px] font-semibold text-[#2C2F63]/70 break-keep">
+                친구를 가장 먼저 초대해 1등 산타가 되어 보세요!
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {leaders.map((leader) => {
+                const isMe = leader.nickname === mySnowball.nickname;
+                const medal =
+                  leader.rank === 1
+                    ? "🥇"
+                    : leader.rank === 2
+                    ? "🥈"
+                    : leader.rank === 3
+                    ? "🥉"
+                    : null;
+
+                const rowBgClass =
+                  leader.rank === 1
+                    ? "bg-[#FAEBBF]/75 border-[#E5C778]"
+                    : leader.rank === 2
+                    ? "bg-[#C0EEE8]/65 border-[#8ED5CC]"
+                    : leader.rank === 3
+                    ? "bg-[#FBD0D8]/65 border-[#EBA9B7]"
+                    : isMe
+                    ? "bg-[#E8ECFA] border-[#2C2F63]/30"
+                    : "bg-[#F8F9FE] border-[#2C2F63]/10";
+
+                return (
+                  <div
+                    key={`${leader.rank}-${leader.nickname}`}
+                    className={`px-3.5 py-2.5 rounded-xl border flex items-center justify-between gap-2 ${rowBgClass}`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      {medal ? (
+                        <span
+                          className="w-6 text-center text-base leading-none shrink-0"
+                          aria-label={`${leader.rank}위`}
+                        >
+                          {medal}
+                        </span>
+                      ) : (
+                        <span className="w-6 text-center text-xs font-extrabold text-[#2C2F63]/75 shrink-0">
+                          {leader.rank}위
+                        </span>
+                      )}
+
+                      <span className="text-xs font-extrabold text-[#2C2F63] truncate">
+                        {leader.nickname}
+                      </span>
+
+                      {isMe && (
+                        <span className="px-2 py-0.5 rounded-full bg-[#2C2F63] text-white text-[9px] font-extrabold leading-none shrink-0">
+                          나
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="shrink-0 px-2.5 py-1 rounded-full bg-white/90 border border-[#2C2F63]/15 text-[11px] font-extrabold text-[#2C2F63] leading-none">
+                      {leader.referralCount}명
+                    </span>
                   </div>
                 );
               })}

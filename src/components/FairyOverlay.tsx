@@ -10,13 +10,13 @@ interface FairyOverlayProps {
 }
 
 /**
- * 편지 도착(S04) 및 편지 전송 직후(S05) 등장하는 요술봉 요정(fairy.mp4?v=2, 길이 약 2.26초) 투명 캔버스 오버레이
- * - 숨겨진 <video src="/fairy.mp4?v=2" muted playsInline> 프레임을 videoWidth x videoHeight 원본 비율 그대로 <canvas>에 렌더링하며
+ * 편지 도착(S04) 및 편지 전송 직후(S05) 등장하는 요술봉 요정(fairy.mp4?v=3, 길이 2.0초) 투명 캔버스 오버레이
+ * - 숨겨진 <video src="/fairy.mp4?v=3" muted playsInline> 프레임을 videoWidth x videoHeight 원본 세로형 비율 그대로 <canvas>에 렌더링하며
  *   어두운 검은 배경 픽셀(r < 18 && g < 18 && b < 18)은 alpha = 0으로 제거하고,
  *   밝기 18 ~ 45 가장자리 구간은 부드럽게 알파 블렌딩하여 밤하늘 위에 요정과 반짝이만 깨끗하게 표현합니다.
- * - 연출 시작 즉시 화면 최상단(top: 0)으로 이동하고 약 2.26초 동안 스크롤을 일시 잠금(overflow: hidden, touch-action: none)했다가 종료 즉시 해제합니다.
- * - 0.75초 지점(요정이 요술봉을 내려 반짝이를 뿌리는 순간)에 맞춰 스노우볼 눈보라(Shake) 효과를 자동으로 발동시킵니다.
- * - 영상 종료(약 2.2초 / onEnded) 즉시 숨겨두었던 상단 UI를 부드럽게 복구합니다.
+ * - 연출 시작 시 무조건 top: 0이 아니라 요정 상단부터 스노우볼 하단 받침대까지 한 화면에 잘림 없이 들어오는 위치(약 top: 70~85px 또는 중앙 정렬 계산값)로 스크롤한 뒤
+ *   약 2.0초 동안 스크롤을 일시 잠금(overflow: hidden, touch-action: none)했다가 onEnded(안전 타임아웃 2.15초) 즉시 해제합니다.
+ * - 0.55초 지점(요정이 요술봉을 내려 반짝이 가루가 쏟아지는 순간)에 맞춰 스노우볼 눈보라(Shake) 효과를 자동으로 발동시킵니다.
  */
 export default function FairyOverlay({
   active,
@@ -24,6 +24,7 @@ export default function FairyOverlay({
   onHideTopUiChange,
   onComplete,
 }: FairyOverlayProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -47,7 +48,7 @@ export default function FairyOverlay({
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
 
-    // 1) 연출 시작 즉시 화면 최상단으로 이동 및 스크롤 일시 고정(Scroll Lock)
+    // 1) 요정 상단 ~ 스노우볼 받침대 바닥 끝까지 한 화면에 잘림 없이 들어오는 최적 스크롤 위치 계산 후 스크롤 잠금
     const prevBodyOverflow = document.body.style.overflow;
     const prevBodyTouchAction = document.body.style.touchAction;
     const prevHtmlOverflow = document.documentElement.style.overflow;
@@ -64,11 +65,26 @@ export default function FairyOverlay({
     };
 
     try {
-      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
+      const parentEl = containerRef.current?.parentElement;
+      let targetTop = 75;
+      if (parentEl && typeof window !== "undefined") {
+        const rect = parentEl.getBoundingClientRect();
+        const pageTop = rect.top + window.scrollY;
+        const pageBottom = rect.bottom + window.scrollY;
+        // 요정이 스노우볼 상단 위로 약 140px 올라오므로 전체 연출 영역은 [pageTop - 140 .. pageBottom]
+        const stageTop = pageTop - 140;
+        const stageBottom = pageBottom + 16;
+        const stageCenter = (stageTop + stageBottom) * 0.5;
+        // 상단 고정 헤더(약 46px)를 제외한 가시 영역 중앙에 맞춤 (최소 65px ~ 최대 130px 범위)
+        const visibleCenterOffset = (window.innerHeight + 46) * 0.5;
+        const idealScroll = Math.round(stageCenter - visibleCenterOffset);
+        targetTop = Math.max(65, Math.min(130, idealScroll));
+      }
+      window.scrollTo({ top: targetTop, behavior: "instant" as ScrollBehavior });
+      document.documentElement.scrollTop = targetTop;
+      document.body.scrollTop = targetTop;
     } catch {
-      window.scrollTo(0, 0);
+      window.scrollTo(0, 75);
     }
 
     document.body.style.overflow = "hidden";
@@ -93,35 +109,35 @@ export default function FairyOverlay({
       onCompleteRef.current();
     };
 
-    // 시작 즉시 상단 UI 부드럽게 숨김 (0초 ~ 약 2.2초)
+    // 시작 즉시 상단 UI 부드럽게 숨김 (0초 ~ 2.0초)
     onHideTopUiChangeRef.current(true);
 
-    // 0.75초 눈보라 싱크 및 2.26초 종료/스크롤 해제 안전 타이머
+    // 0.55초 눈보라 싱크 및 2.0초 종료(안전 타임아웃 2.15초) 타이머
     const sparkleFallbackTimer = window.setTimeout(() => {
       if (!sparkleTriggered && !isCancelled) {
         sparkleTriggered = true;
         onWandSparkleRef.current();
       }
-    }, 780);
+    }, 570);
 
     const restoreUiFallbackTimer = window.setTimeout(() => {
       if (!uiRestored && !isCancelled) {
         uiRestored = true;
         onHideTopUiChangeRef.current(false);
       }
-    }, 2220);
+    }, 2000);
 
     const endFallbackTimer = window.setTimeout(() => {
       finish();
-    }, 2400);
+    }, 2150);
 
     const renderFrame = () => {
       if (isCancelled) return;
 
       if (video.readyState >= 2) {
-        // 비디오 원본 가로·세로 비율 그대로 캔버스 해상도 동기화
+        // 비디오 원본 가로·세로 비율(videoWidth x videoHeight) 그대로 캔버스 해상도 동기화
         const vw = video.videoWidth || 480;
-        const vh = video.videoHeight || 480;
+        const vh = video.videoHeight || 640;
         if (canvas.width !== vw || canvas.height !== vh) {
           canvas.width = vw;
           canvas.height = vh;
@@ -156,13 +172,13 @@ export default function FairyOverlay({
         }
 
         const currentTime = video.currentTime;
-        // 0.75초 지점: 요정이 요술봉을 내려 반짝이를 뿌리는 순간 스노우볼 눈보라 발동
-        if (currentTime >= 0.75 && !sparkleTriggered) {
+        // 0.55초 지점: 요정이 요술봉을 내려 반짝이 가루가 쏟아지는 순간 스노우볼 눈보라 발동
+        if (currentTime >= 0.55 && !sparkleTriggered) {
           sparkleTriggered = true;
           onWandSparkleRef.current();
         }
-        // 영상 종료 직전(약 2.18초) 상단 UI 복귀
-        if (currentTime >= 2.18 && !uiRestored) {
+        // 영상 종료 시점(약 1.95초 ~ 2.0초) 상단 UI 복귀
+        if (currentTime >= 1.95 && !uiRestored) {
           uiRestored = true;
           onHideTopUiChangeRef.current(false);
         }
@@ -189,7 +205,7 @@ export default function FairyOverlay({
           }
         })
         .catch(() => {
-          // 자동 재생이 제한된 환경에서도 타이머 기반으로 눈보라, UI 복구 및 스크롤 해제가 정상 동작하도록 보장
+          // 자동 재생 제한 환경에서도 타이머 기반으로 눈보라, UI 복구 및 스크롤 해제가 정상 동작하도록 보장
         });
     } else {
       rafId = window.requestAnimationFrame(renderFrame);
@@ -211,12 +227,13 @@ export default function FairyOverlay({
 
   return (
     <div
-      className="pointer-events-none absolute -top-[115px] sm:-top-[128px] left-1/2 -translate-x-1/2 w-[195px] sm:w-[215px] z-30 flex items-center justify-center select-none"
+      ref={containerRef}
+      className="pointer-events-none absolute -top-[140px] sm:-top-[155px] left-1/2 -translate-x-1/2 w-[215px] sm:w-[235px] z-30 flex items-center justify-center select-none"
       aria-hidden="true"
     >
       <video
         ref={videoRef}
-        src="/fairy.mp4?v=2"
+        src="/fairy.mp4?v=3"
         muted
         playsInline
         preload="auto"
