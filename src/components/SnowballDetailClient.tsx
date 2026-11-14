@@ -129,6 +129,7 @@ function SnowballDetailContent() {
         const currentCount = visibleLetters.length;
 
         if (!Number.isNaN(prevCount) && currentCount > prevCount) {
+          window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
           setIsFairyActive(true);
         }
         window.localStorage.setItem(storageKey, String(currentCount));
@@ -257,7 +258,10 @@ function SnowballDetailContent() {
       setJustSent(true);
       setLetterContent("");
 
-      // [요정 트리거 ①] 상대방 스노우볼(S05)에 편지 작성·전송 완료 직후 요정 애니메이션 즉시 1회 재생
+      // [요정 트리거 ①] 상대방 스노우볼(S05)에 편지 작성·전송 완료 직후 화면 최상단으로 이동하여 요정 애니메이션 즉시 1회 재생
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+      }
       setIsFairyActive(true);
 
       if (result.senderRewarded) {
@@ -781,9 +785,9 @@ function SnowballDetailContent() {
           document.body
         )}
 
-      {/* 로그인 완료 후 스노우볼 화면(S04/S05) 진입 시 노출되는 무신사 팝업 (인앱 브라우저에서는 노출되지 않음) */}
+      {/* 로그인 완료 후 스노우볼 화면(S04/S05) 진입 시 노출되는 무신사 팝업 (인앱 브라우저 및 요정 연출 중에는 대기) */}
       <MusinsaPopup
-        isOpen={isMusinsaPopupOpen}
+        isOpen={isMusinsaPopupOpen && !isFairyActive}
         onClose={handleCloseMusinsaPopup}
         onApply={handleCloseMusinsaPopup}
       />

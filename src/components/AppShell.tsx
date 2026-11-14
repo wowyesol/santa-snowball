@@ -94,6 +94,7 @@ export default function AppShell({
   }, [pathname]);
 
   // 배경음악(/bgm.mp3) 마운트 시 자동 재생 시도 & 브라우저 정책 대기 시 첫 터치/클릭 즉시 재생
+  // + 크롬 앱 이탈/탭 전환/화면 잠금(visibilitychange, pagehide, blur, unmount) 시 즉시 일시정지 처리
   useEffect(() => {
     if (typeof window === "undefined" || pathname === "/admin") return;
 
@@ -103,16 +104,46 @@ export default function AppShell({
     setIsMuted(globalBgmMuted);
     audio.muted = globalBgmMuted;
 
+    // 백그라운드 미디어 컨트롤(잠금화면/알림창 재생바)이 남지 않도록 MediaSession 정리 헬퍼
+    const clearMediaSession = () => {
+      if (typeof navigator !== "undefined" && "mediaSession" in navigator) {
+        try {
+          navigator.mediaSession.metadata = null;
+          navigator.mediaSession.playbackState = "none";
+          navigator.mediaSession.setActionHandler("play", null);
+          navigator.mediaSession.setActionHandler("pause", null);
+          navigator.mediaSession.setActionHandler("stop", null);
+        } catch {
+          // 일부 브라우저 미지원 액션 무시
+        }
+      }
+    };
+
+    const pauseBgmImmediately = () => {
+      audio.pause();
+      clearMediaSession();
+    };
+
     const tryPlayBgm = () => {
       if (globalBgmMuted) return;
+      if (
+        typeof document !== "undefined" &&
+        (document.hidden || document.visibilityState !== "visible")
+      ) {
+        return;
+      }
       audio.volume = 0.35;
       audio.muted = false;
       if (audio.paused) {
         const playPromise = audio.play();
         if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // 첫 사용자 인터랙션 대기
-          });
+          playPromise
+            .then(() => {
+              clearMediaSession();
+            })
+            .catch(() => {
+              // 첫 사용자 인터랙션 대기
+            });
         }
       }
     };
@@ -120,7 +151,7 @@ export default function AppShell({
     // 1) 마운트 즉시 재생 시도
     tryPlayBgm();
 
-    // 2) 화면 아무 곳이나 처음 한 번 터치/클릭하는 즉시 음악 재생 (사용자가 음소거한 경우는 제외)
+    // 2) 화면 아무 곳이나 처음 한 번 터치/클릭하는 즉시 음악 재생 (사용자가 수동 음소거한 경우는 제외)
     const handleFirstInteraction = () => {
       if (globalBgmMuted) return;
       tryPlayBgm();
@@ -131,6 +162,33 @@ export default function AppShell({
       }
     };
 
+    // 3) 탭 전환 / 홈 화면 이동 / 화면 잠금 / 창 포커스 이탈 시 즉시 정지, 복귀 시(수동 음소거가 아니면) 재개
+    const handleVisibilityChange = () => {
+      if (document.hidden || document.visibilityState !== "visible") {
+        pauseBgmImmediately();
+      } else if (!globalBgmMuted) {
+        tryPlayBgm();
+      }
+    };
+
+    const handleWindowBlur = () => {
+      pauseBgmImmediately();
+    };
+
+    const handleWindowFocus = () => {
+      if (
+        !globalBgmMuted &&
+        !document.hidden &&
+        document.visibilityState === "visible"
+      ) {
+        tryPlayBgm();
+      }
+    };
+
+    const handlePageHide = () => {
+      pauseBgmImmediately();
+    };
+
     window.addEventListener("pointerdown", handleFirstInteraction, {
       passive: true,
     });
@@ -138,11 +196,22 @@ export default function AppShell({
       passive: true,
     });
     window.addEventListener("click", handleFirstInteraction, { passive: true });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
+    window.addEventListener("focus", handleWindowFocus);
+    window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("beforeunload", handlePageHide);
 
     return () => {
       window.removeEventListener("pointerdown", handleFirstInteraction);
       window.removeEventListener("touchstart", handleFirstInteraction);
       window.removeEventListener("click", handleFirstInteraction);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+      window.removeEventListener("focus", handleWindowFocus);
+      window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("beforeunload", handlePageHide);
+      pauseBgmImmediately();
     };
   }, [pathname]);
 
