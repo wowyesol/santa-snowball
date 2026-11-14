@@ -17,7 +17,7 @@ interface DetectedInAppInfo {
   isAndroid: boolean;
 }
 
-function detectInAppBrowser(ua: string): DetectedInAppInfo {
+export function detectInAppBrowser(ua: string): DetectedInAppInfo {
   const isIOS = /iPhone|iPad|iPod/i.test(ua);
   const isAndroid = /Android/i.test(ua);
 

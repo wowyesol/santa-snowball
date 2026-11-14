@@ -7,6 +7,11 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import SnowballGraphic from "@/components/SnowballGraphic";
 import GeminiHighlightBanner from "@/components/GeminiHighlightBanner";
+import MusinsaPopup from "@/components/MusinsaPopup";
+import InAppBrowserGuard, {
+  detectInAppBrowser,
+} from "@/components/InAppBrowserGuard";
+import FairyOverlay from "@/components/FairyOverlay";
 import {
   AuthSnowballState,
   Letter,
@@ -51,6 +56,11 @@ function SnowballDetailContent() {
   const [copiedToast, setCopiedToast] = useState<string | null>(null);
   const [isShaking, setIsShaking] = useState<boolean>(false);
   const [isP04Open, setIsP04Open] = useState<boolean>(false);
+
+  // 무신사 팝업(로그인 완료 후 스노우볼 화면 진입 시 노출) 및 요정 오버레이 상태
+  const [isMusinsaPopupOpen, setIsMusinsaPopupOpen] = useState<boolean>(false);
+  const [isFairyActive, setIsFairyActive] = useState<boolean>(false);
+  const [isTopUiHidden, setIsTopUiHidden] = useState<boolean>(false);
 
   // S05 상태: 편지(최대 200자) 작성 및 완료/중복 상태
   const [myExistingLetter, setMyExistingLetter] = useState<Letter | null>(null);
@@ -104,10 +114,25 @@ function SnowballDetailContent() {
     setLetters(visibleLetters);
 
     const mySb = currentAuth.snowball;
-    if (mySb && mySb.id === updatedSb.id) {
+    const isMyOwnSnowball = Boolean(mySb && mySb.id === updatedSb.id);
+
+    if (isMyOwnSnowball) {
       const summary = await getTicketSummary(updatedSb.id);
       setTicketSummary(summary);
       setMyExistingLetter(null);
+
+      // [요정 트리거 ②] 내 스노우볼(S04) 진입 시 이전 확인 편지 수(last_seen_letter_count_${slug})보다 현재 받은 편지 수가 늘어났으면 요정 1회 재생
+      if (typeof window !== "undefined" && viewModeParam !== "own-link") {
+        const storageKey = `last_seen_letter_count_${updatedSb.slug}`;
+        const prevRaw = window.localStorage.getItem(storageKey);
+        const prevCount = prevRaw !== null ? Number(prevRaw) : 0;
+        const currentCount = visibleLetters.length;
+
+        if (!Number.isNaN(prevCount) && currentCount > prevCount) {
+          setIsFairyActive(true);
+        }
+        window.localStorage.setItem(storageKey, String(currentCount));
+      }
     } else {
       // 친구의 스노우볼 방문 시 친구 닉네임 기억 (추후 S08 추천인 자동 입력용)
       saveInvitedByNickname(updatedSb.nickname);
@@ -123,8 +148,18 @@ function SnowballDetailContent() {
       setMyExistingLetter(existing);
     }
 
+    // [팝업 순서 제어] 외부(일반) 브라우저에서 구글 로그인을 완료하고 스노우볼 화면에 진입했을 때 무신사 팝업 노출
+    if (typeof window !== "undefined") {
+      const inAppInfo = detectInAppBrowser(window.navigator.userAgent);
+      const alreadySeen =
+        window.sessionStorage.getItem("santa_musinsa_popup_seen") === "1";
+      if (!inAppInfo.isInApp && !alreadySeen) {
+        setIsMusinsaPopupOpen(true);
+      }
+    }
+
     setLoading(false);
-  }, [slug, router]);
+  }, [slug, router, viewModeParam]);
 
   useEffect(() => {
     loadData();
@@ -184,6 +219,24 @@ function SnowballDetailContent() {
     }, 1800);
   };
 
+  // 요정이 1.65초 지점에 요술봉을 내릴 때 스노우볼 눈보라 물리 효과만 강하게 발동 (P04 모달은 열지 않음)
+  const handleFairyWandSparkle = useCallback(() => {
+    setIsShaking(false);
+    window.setTimeout(() => {
+      setIsShaking(true);
+      window.setTimeout(() => {
+        setIsShaking(false);
+      }, 1900);
+    }, 20);
+  }, []);
+
+  const handleCloseMusinsaPopup = () => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("santa_musinsa_popup_seen", "1");
+    }
+    setIsMusinsaPopupOpen(false);
+  };
+
   // [S05] 친구 스노우볼에 편지 넣기 제출 핸들러
   const handleSendLetterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,6 +256,9 @@ function SnowballDetailContent() {
       setMyExistingLetter(result.letter);
       setJustSent(true);
       setLetterContent("");
+
+      // [요정 트리거 ①] 상대방 스노우볼(S05)에 편지 작성·전송 완료 직후 요정 애니메이션 즉시 1회 재생
+      setIsFairyActive(true);
 
       if (result.senderRewarded) {
         setJustSentRewardMsg("응모권 +1장");
@@ -255,8 +311,15 @@ function SnowballDetailContent() {
     ? "bg-sky-400/25 border-sky-300 text-sky-100 hover:bg-sky-400/35"
     : "bg-rose-500/25 border-rose-400 text-rose-100 hover:bg-rose-500/35 shadow-[0_0_12px_rgba(244,63,94,0.3)]";
 
+  const topUiVisibilityClass = isTopUiHidden
+    ? "opacity-0 pointer-events-none transition-opacity duration-500"
+    : "opacity-100 transition-opacity duration-500";
+
   return (
     <AppShell>
+      {/* 인앱 브라우저 감지 시 외부 브라우저 안내 최우선 노출 */}
+      <InAppBrowserGuard />
+
       {copiedToast && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[75] px-4 py-2.5 rounded-full bg-emerald-500 text-white text-xs font-extrabold shadow-xl">
           {copiedToast}
@@ -269,8 +332,10 @@ function SnowballDetailContent() {
               [S04] 내 스노우볼 홈 (/snowball/[내slug])
              ================================================================ */
           <>
-            {/* 상단 타이틀 및 제미나이 인증 상태 배지 (수평·수직 정중앙 정렬 & 여유 간격 확대) */}
-            <div className="w-full flex flex-col items-center justify-center text-center">
+            {/* 상단 타이틀 및 제미나이 인증 상태 배지 (요정 등장 0~3.8초 동안 부드럽게 일시 숨김) */}
+            <div
+              className={`w-full flex flex-col items-center justify-center text-center ${topUiVisibilityClass}`}
+            >
               <h1 className="tracking-tight text-center">
                 <span className="block text-3xl sm:text-4xl font-black text-white leading-tight break-keep">
                   {targetSnowball.nickname}의
@@ -280,7 +345,7 @@ function SnowballDetailContent() {
                 </span>
               </h1>
 
-              {/* ① 제미나이 인증 상태 배지 (타이틀과 mt-4 간격, 아래 받은 편지 줄과 mt-12~14 대폭 간격 확보) */}
+              {/* ① 제미나이 인증 상태 배지 */}
               <Link
                 href="/verify"
                 className={`mt-4 inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-extrabold leading-none text-center border transition-all active:scale-95 ${statusBadgeColorClass}`}
@@ -291,8 +356,10 @@ function SnowballDetailContent() {
               </Link>
             </div>
 
-            {/* 받은 편지 N개 (좌측) & 현재 스노우볼 레벨 Lv.n (우측) - 인증 배지와의 간격을 좁혀 위로 올림 */}
-            <div className="mt-3.5 sm:mt-4 w-full flex items-center justify-between gap-2 px-1">
+            {/* 받은 편지 N개 (좌측) & 현재 스노우볼 레벨 Lv.n (우측) - 요정 등장 0~3.8초 동안 일시 숨김 */}
+            <div
+              className={`mt-3.5 sm:mt-4 w-full flex items-center justify-between gap-2 px-1 ${topUiVisibilityClass}`}
+            >
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
@@ -301,8 +368,14 @@ function SnowballDetailContent() {
               </span>
             </div>
 
-            {/* ② 스노우볼 이미지 영역 (위쪽 줄이 올라간 만큼 상단 마진을 확보해 스노우볼 하단 받침대가 눈언덕 바닥에 놓인 위치는 그대로 유지) */}
-            <div className="mt-8 sm:mt-9 mb-2 flex justify-center">
+            {/* ② 스노우볼 이미지 영역 + 요술봉 요정 오버레이 */}
+            <div className="relative mt-8 sm:mt-9 mb-2 flex justify-center">
+              <FairyOverlay
+                active={isFairyActive}
+                onWandSparkle={handleFairyWandSparkle}
+                onHideTopUiChange={setIsTopUiHidden}
+                onComplete={() => setIsFairyActive(false)}
+              />
               <SnowballGraphic
                 level={targetSnowball.level}
                 letters={letters}
@@ -386,7 +459,9 @@ function SnowballDetailContent() {
               [S05] 친구 스노우볼 (/snowball/[친구slug] 또는 own-link)
              ================================================================ */
           <>
-            <div className="w-full flex flex-col items-center justify-center text-center">
+            <div
+              className={`w-full flex flex-col items-center justify-center text-center ${topUiVisibilityClass}`}
+            >
               <h1 className="tracking-tight text-center">
                 <span className="block text-3xl sm:text-4xl font-black text-white leading-tight break-keep">
                   {targetSnowball.nickname}의
@@ -403,8 +478,10 @@ function SnowballDetailContent() {
               )}
             </div>
 
-            {/* 받은 편지 N개 & Lv.n 줄을 위로 올리고, 아래 스노우볼과의 간격을 확보해 스노우볼 눈언덕 착지 위치 유지 */}
-            <div className="mt-3.5 sm:mt-4 w-full flex items-center justify-between gap-2 px-1">
+            {/* 받은 편지 N개 & Lv.n 줄 (요정 등장 0~3.8초 동안 일시 숨김) */}
+            <div
+              className={`mt-3.5 sm:mt-4 w-full flex items-center justify-between gap-2 px-1 ${topUiVisibilityClass}`}
+            >
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
@@ -413,11 +490,18 @@ function SnowballDetailContent() {
               </span>
             </div>
 
-            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 (하단 흰 눈언덕 바닥에 받침대가 안정적으로 안착하도록 위치 유지) */}
-            <div className="mt-8 sm:mt-9 mb-2 flex justify-center">
+            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 + 편지 전송 직후 등장하는 요술봉 요정 오버레이 */}
+            <div className="relative mt-8 sm:mt-9 mb-2 flex justify-center">
+              <FairyOverlay
+                active={isFairyActive}
+                onWandSparkle={handleFairyWandSparkle}
+                onHideTopUiChange={setIsTopUiHidden}
+                onComplete={() => setIsFairyActive(false)}
+              />
               <SnowballGraphic
                 level={targetSnowball.level}
                 letters={letters}
+                isShaking={isShaking}
               />
             </div>
 
@@ -693,6 +777,13 @@ function SnowballDetailContent() {
           </div>,
           document.body
         )}
+
+      {/* 로그인 완료 후 스노우볼 화면(S04/S05) 진입 시 노출되는 무신사 팝업 (인앱 브라우저에서는 노출되지 않음) */}
+      <MusinsaPopup
+        isOpen={isMusinsaPopupOpen}
+        onClose={handleCloseMusinsaPopup}
+        onApply={handleCloseMusinsaPopup}
+      />
     </AppShell>
   );
 }

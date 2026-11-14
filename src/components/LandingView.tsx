@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import AppShell from "./AppShell";
 import SnowballGraphic from "./SnowballGraphic";
-import MusinsaPopup from "./MusinsaPopup";
 import InAppBrowserGuard from "./InAppBrowserGuard";
 import {
   Snowball,
@@ -35,7 +34,6 @@ export default function LandingView() {
 
   const [checking, setChecking] = useState<boolean>(true);
   const [friendSnowball, setFriendSnowball] = useState<Snowball | null>(null);
-  const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -106,7 +104,7 @@ export default function LandingView() {
       }
 
       setFriendSnowball(friendData);
-      setIsPopupOpen(true); // 비로그인 진입 시 P00 무신사 팝업 자동 노출
+      // 비로그인 랜딩(S01)에서는 무신사 팝업을 띄우지 않고 인앱 브라우저 안내(InAppBrowserGuard)만 최우선 동작하도록 분리
       setChecking(false);
     }
 
@@ -118,7 +116,6 @@ export default function LandingView() {
   }, [sbParam, router]);
 
   const handleGoToS02 = () => {
-    setIsPopupOpen(false);
     const targetSlug = friendSnowball?.slug || sbParam || getPendingInviteSlug();
     if (targetSlug) {
       if (typeof window !== "undefined") {
@@ -220,13 +217,6 @@ export default function LandingView() {
           </p>
         </section>
       </div>
-
-      {/* P00: 무신사 20만 원 응모하기 팝업 */}
-      <MusinsaPopup
-        isOpen={isPopupOpen}
-        onClose={() => setIsPopupOpen(false)}
-        onApply={handleGoToS02}
-      />
     </AppShell>
   );
 }

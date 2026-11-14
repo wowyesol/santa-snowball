@@ -18,11 +18,10 @@ function getSnowballFilenameByLevel(levelParam: string | null): string {
 /**
  * 카카오톡 · 인스타그램 DM 등 SNS 공유용 동적 Open Graph 썸네일 생성 라우트 (/api/og)
  * - 규격: 1200 x 630 px
- * - 배경 가로 늘림(Stretch) 절대 금지:
- *   원본 비율(941 x 1672 -> 1200 x 2133) 그대로 상단 레이어(top: 0, 별/산타썰매)와
- *   하단 눈언덕 레이어(아래쪽 160~180px 높이의 원본 비율 크레용 눈언덕)를 겹쳐 배치합니다.
- * - 스노우볼 크기 확대 및 눈언덕 착지:
- *   width: 520px, height: 520px, bottom: -15px로 배치해 하단 눈언덕 바닥에 받침대가 안정적으로 안착합니다.
+ * - 상하 합성 없이 원본 비율 그대로인 bg-night-snow.png(width: 1200px, height: 2133px) 단 한 장만 놓고,
+ *   이미지의 맨 아래쪽 지면 영역(위쪽 절반은 밤하늘 푸른색, 아래쪽 절반 정도에 흰 눈언덕 지면이 자연스럽게 보이는 하단 구간)에
+ *   맞춰 찌그러짐 없이 깔끔하게 단일 크롭합니다.
+ * - 그 눈언덕 지면 바로 위에 스노우볼(510x510)이 공중에 뜨지 않고 바닥에 안정감 있게 올라앉도록 배치합니다.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -59,8 +58,8 @@ export async function GET(req: NextRequest) {
       snowballDataUrl = `data:image/png;base64,${fileBuffer.toString("base64")}`;
     }
 
-    const snowballSize = 520;
-    const snowballLeft = Math.round((1200 - snowballSize) / 2); // 340px
+    const snowballSize = 515;
+    const snowballLeft = Math.round((1200 - snowballSize) / 2); // 343px
 
     return new ImageResponse(
       (
@@ -74,51 +73,23 @@ export async function GET(req: NextRequest) {
             overflow: "hidden",
           }}
         >
-          {/* 상단 레이어: 원본 가로세로 비율(width: 1200px, height: 2133px) 그대로 top: 0, left: 0에 배치해 밤하늘·별·산타썰매가 찌그러짐 없이 노출 */}
+          {/* 단일 배경 이미지 크롭: 원본 가로세로 비율(width: 1200px, height: 2133px) 단 한 장만 하단 지면 영역(bottom: -140px)에 맞춰 배치 */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={bgDataUrl}
-            alt="배경 상단"
+            alt="배경"
             width={1200}
             height={2133}
             style={{
               position: "absolute",
-              top: "0px",
               left: "0px",
+              bottom: "-140px",
               width: "1200px",
               height: "2133px",
             }}
           />
 
-          {/* 하단 눈언덕 레이어: 원본 가로세로 비율(width: 1200px, height: 2133px) 그대로 하단에 크롭 배치해 아래쪽 약 175px 높이에 크레용 눈언덕이 찌그러짐 없이 깔림 */}
-          <div
-            style={{
-              position: "absolute",
-              left: "0px",
-              bottom: "0px",
-              width: "1200px",
-              height: "220px",
-              overflow: "hidden",
-              display: "flex",
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={bgDataUrl}
-              alt="배경 하단 눈언덕"
-              width={1200}
-              height={2133}
-              style={{
-                position: "absolute",
-                left: "0px",
-                bottom: "-240px",
-                width: "1200px",
-                height: "2133px",
-              }}
-            />
-          </div>
-
-          {/* 스노우볼 일러스트 (width: 520px, height: 520px, bottom: -15px로 하단 눈언덕 바닥에 받침대가 푹 안착) */}
+          {/* 스노우볼 일러스트 (width: 515px, height: 515px, 하단 눈언덕 지면 바로 위에 받침대가 안정감 있게 안착) */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={snowballDataUrl}
@@ -128,7 +99,7 @@ export async function GET(req: NextRequest) {
             style={{
               position: "absolute",
               left: `${snowballLeft}px`,
-              bottom: "-15px",
+              bottom: "10px",
               width: `${snowballSize}px`,
               height: `${snowballSize}px`,
               objectFit: "contain",

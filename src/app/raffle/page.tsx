@@ -221,13 +221,15 @@ export default function RafflePage() {
                 key={prize.id}
                 className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md text-left"
               >
-                {/* 상단 상품 아이콘 & 정보 */}
+                {/* 상단 상품 브랜드 로고 아이콘 & 정보 */}
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="min-w-[64px] min-h-[64px] h-auto px-2 py-2 rounded-xl border border-[#BFD8F5] bg-[#E8F2FF] flex flex-col items-center justify-center shrink-0 text-center">
-                    <span className="text-2xl leading-none">{prize.emoji}</span>
-                    <span className="text-[9px] font-bold text-[#102A4E] mt-1 break-keep">
-                      {prize.shortTitle}
-                    </span>
+                  <div className="w-14 h-14 rounded-2xl border border-[#BFD8F5] bg-white flex items-center justify-center p-1.5 shrink-0 shadow-2xs overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={prize.logoSrc}
+                      alt={prize.shortTitle}
+                      className="w-full h-full object-contain rounded-xl"
+                    />
                   </div>
 
                   <div className="min-w-0 flex-1">

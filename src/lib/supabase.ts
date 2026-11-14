@@ -186,6 +186,7 @@ export interface PrizeItem {
   name: string;
   winnersCount: string;
   emoji: string;
+  logoSrc: string;
 }
 
 export const SAMPLE_PRIZES: PrizeItem[] = [
@@ -196,6 +197,7 @@ export const SAMPLE_PRIZES: PrizeItem[] = [
     name: "무신사 20만 원 상품권",
     winnersCount: "1명",
     emoji: "🛍️",
+    logoSrc: encodeURI("/무신사로고.png"),
   },
   {
     id: "shinsegae_100k",
@@ -204,6 +206,7 @@ export const SAMPLE_PRIZES: PrizeItem[] = [
     name: "신세계 10만 원 상품권",
     winnersCount: "2명",
     emoji: "🏬",
+    logoSrc: encodeURI("/신세계로고.png"),
   },
   {
     id: "baemin_30k",
@@ -212,6 +215,7 @@ export const SAMPLE_PRIZES: PrizeItem[] = [
     name: "배민 3만 원 상품권",
     winnersCount: "5명",
     emoji: "🛵",
+    logoSrc: encodeURI("/배민로고.png"),
   },
 ];
 
