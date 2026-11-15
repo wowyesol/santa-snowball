@@ -8,13 +8,12 @@ import {
   AuthSnowballState,
   Snowball,
   checkNicknameAvailable,
+  clearAllInviteStorage,
   clearPendingInviteSlug,
   createSnowball,
   getCurrentAuthAndSnowball,
-  getPendingInviteSlug,
   getSnowballBySlug,
   saveInvitedByNickname,
-  savePendingInviteSlug,
   signInWithGoogle,
   signOutAll,
   supabase,
@@ -62,18 +61,14 @@ function LoginS02Content() {
 
   const redirectExistingUser = useCallback(
     (mySlug: string, targetInviteSlug: string | null) => {
+      clearPendingInviteSlug();
       if (targetInviteSlug && targetInviteSlug !== mySlug) {
-        if (typeof window !== "undefined") {
-          window.localStorage.removeItem("pending_friend_slug");
-        }
-        clearPendingInviteSlug();
         router.replace(`/snowball/${encodeURIComponent(targetInviteSlug)}`);
         return;
       }
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem("pending_friend_slug");
+      if (targetInviteSlug === mySlug) {
+        clearAllInviteStorage();
       }
-      clearPendingInviteSlug();
       router.replace(`/snowball/${encodeURIComponent(mySlug)}`);
     },
     [router]
@@ -85,37 +80,42 @@ function LoginS02Content() {
       const sp = new URLSearchParams(window.location.search);
       fromWindow = sp.get("sb")?.trim() || null;
     }
-    const activeUrlSb = urlSb || fromWindow;
-    if (activeUrlSb) {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("pending_friend_slug", activeUrlSb);
-      }
-      savePendingInviteSlug(activeUrlSb);
+    // 오직 현재 /login URL에 명시된 ?sb= 파라미터만 인정 (스토리지에 남은 예전 슬러그 절대 참조 금지)
+    const activeUrlSb = urlSb || fromWindow || null;
+    if (!activeUrlSb) {
+      clearAllInviteStorage();
+    } else {
+      clearPendingInviteSlug();
     }
-    const savedSb =
-      activeUrlSb ||
-      (typeof window !== "undefined"
-        ? window.localStorage.getItem("pending_friend_slug")
-        : null) ||
-      getPendingInviteSlug();
-    setInviteSlug(savedSb);
+    setInviteSlug(activeUrlSb);
 
     const [friendData, currentAuth] = await Promise.all([
-      savedSb ? getSnowballBySlug(savedSb) : Promise.resolve(null),
+      activeUrlSb ? getSnowballBySlug(activeUrlSb) : Promise.resolve(null),
       getCurrentAuthAndSnowball(),
     ]);
 
     if (friendData) {
       setFriendSnowball(friendData);
-      saveInvitedByNickname(friendData.nickname);
+      if (
+        !currentAuth.snowball ||
+        currentAuth.snowball.slug !== friendData.slug
+      ) {
+        saveInvitedByNickname(friendData.nickname);
+      }
     } else {
       setFriendSnowball(null);
+      if (activeUrlSb) {
+        clearAllInviteStorage();
+      }
     }
 
     setAuthState(currentAuth);
 
     if (currentAuth.isAuthenticated && currentAuth.snowball) {
-      redirectExistingUser(currentAuth.snowball.slug, savedSb);
+      redirectExistingUser(
+        currentAuth.snowball.slug,
+        friendData ? friendData.slug : null
+      );
       return;
     }
 
@@ -169,7 +169,9 @@ function LoginS02Content() {
     setErrorMsg(null);
     setOauthLoading(true);
     try {
-      const { error } = await signInWithGoogle(inviteSlug);
+      const effectiveInvite =
+        urlSb && friendSnowball ? friendSnowball.slug : urlSb || null;
+      const { error } = await signInWithGoogle(effectiveInvite);
       if (error) {
         setErrorMsg(`구글 로그인 안내: ${error.message}`);
         setOauthLoading(false);
@@ -219,26 +221,20 @@ function LoginS02Content() {
         termsAgreed: agreePrivacy && agreeContact,
       });
 
-      const pendingFromStorage =
-        typeof window !== "undefined"
-          ? window.localStorage.getItem("pending_friend_slug")
-          : null;
       const targetFriendSlug =
-        pendingFromStorage?.trim() ||
-        friendSnowball?.slug ||
-        inviteSlug?.trim() ||
-        getPendingInviteSlug() ||
-        null;
+        urlSb && friendSnowball
+          ? friendSnowball.slug
+          : inviteSlug?.trim() || null;
 
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem("pending_friend_slug");
-      }
       clearPendingInviteSlug();
 
-      // 친구 공유 링크로 진입한 경우 친구의 S05로 무조건 자동 이동, 일반 진입은 내 S04로 이동
+      // 친구 공유 링크(?sb=...)에서 시작해 가입을 마친 경우에만 1회 친구 S05로 이동, 일반 진입은 무조건 내 S04로 이동
       if (targetFriendSlug && targetFriendSlug !== created.slug) {
         router.replace(`/snowball/${encodeURIComponent(targetFriendSlug)}`);
       } else {
+        if (targetFriendSlug === created.slug) {
+          clearAllInviteStorage();
+        }
         router.replace(`/snowball/${encodeURIComponent(created.slug)}`);
       }
     } catch (err) {

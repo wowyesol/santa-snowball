@@ -20,9 +20,12 @@ import {
   Letter,
   Snowball,
   TicketSummary,
+  clearInvitedByNickname,
+  clearPendingInviteSlug,
   computeAndSyncSnowballLevel,
   findMyExistingLetter,
   getCurrentAuthAndSnowball,
+  getInvitedByNickname,
   getSnowballBySlug,
   getSnowballLevelInfo,
   getTicketSummary,
@@ -30,7 +33,6 @@ import {
   isCampaignOpenDateReached,
   logEventAsync,
   saveInvitedByNickname,
-  savePendingInviteSlug,
   sendGiftLetter,
   setFlashToast,
 } from "@/lib/supabase";
@@ -96,15 +98,17 @@ function SnowballDetailContent() {
     }
 
     // 2) 비로그인 상태(또는 아직 내 스노우볼을 만들지 않은 상태)로 /snowball/[slug]에 직접 접속한 경우:
-    //    절대 바로 스노우볼 화면을 보여주지 않고 즉시 /?sb=[slug]&utm_source=friend (S01 친구 초대 화면)로 강제 리다이렉트!
+    //    영구 스토리지에 슬러그를 남기지 않고 URL 쿼리(?sb=)로만 전달해 S01 친구 초대 화면으로 이동
     if (!currentAuth.isAuthenticated || !currentAuth.snowball) {
-      savePendingInviteSlug(sbData.slug);
-      saveInvitedByNickname(sbData.nickname);
+      clearPendingInviteSlug();
       router.replace(
         `/?sb=${encodeURIComponent(sbData.slug)}&utm_source=friend`
       );
       return;
     }
+
+    // 로그인 완료 상태에서는 리다이렉트용 임시 초대 슬러그를 항상 비워 추후 기본 루트(/) 접속 시 납치 현상 원천 차단
+    clearPendingInviteSlug();
 
     // 최신 사인업 레벨 계산/동기화
     const syncedLevel = await computeAndSyncSnowballLevel(sbData);
@@ -120,6 +124,9 @@ function SnowballDetailContent() {
     const isMyOwnSnowball = Boolean(mySb && mySb.id === updatedSb.id);
 
     if (isMyOwnSnowball) {
+      if (getInvitedByNickname() === updatedSb.nickname) {
+        clearInvitedByNickname();
+      }
       const summary = await getTicketSummary(updatedSb.id);
       setTicketSummary(summary);
       setMyExistingLetter(null);
@@ -138,9 +145,10 @@ function SnowballDetailContent() {
         window.localStorage.setItem(storageKey, String(currentCount));
       }
     } else {
-      // 친구의 스노우볼 방문 시 친구 닉네임 기억 (추후 S08 추천인 자동 입력용)
-      saveInvitedByNickname(updatedSb.nickname);
-      savePendingInviteSlug(updatedSb.slug);
+      // 친구의 스노우볼 방문 시: 절대 pending 슬러그(리다이렉트 타겟)는 저장하지 않고, 본인 닉네임이 아닐 때만 S08 추천인 보조용 닉네임 기록
+      if (updatedSb.nickname !== mySb.nickname) {
+        saveInvitedByNickname(updatedSb.nickname);
+      }
 
       const effectiveSenderUid =
         mySb.user_id || currentAuth.userId || mySb.id;

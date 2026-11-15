@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   AuthSnowballState,
+  clearPendingInviteSlug,
   consumeFlashToast,
   getCurrentAuthAndSnowball,
   getSnowballLevelInfo,
@@ -371,18 +372,19 @@ export default function AppShell({
   useEffect(() => {
     syncHeader();
 
-    // 이미 로그인된 유저가 공유 링크(/?sb=[targetSlug])로 접속한 경우 즉시 친구 스노우볼(S05)로 이동
+    // 이미 로그인된 유저가 현재 URL에 명시적인 ?sb=[targetSlug] 파라미터를 달고 접속한 경우에만 1회 이동 처리 (스토리지 영구 저장 금지)
     async function enforceInviteRedirect() {
-      if (typeof window === "undefined") return;
+      if (typeof window === "undefined" || pathname === "/" || pathname === "/login") {
+        return;
+      }
       const params = new URLSearchParams(window.location.search);
       const sbFromUrl = params.get("sb")?.trim() || null;
       if (!sbFromUrl) return;
 
-      window.localStorage.setItem("pending_friend_slug", sbFromUrl);
       const current = await getCurrentAuthAndSnowball();
       if (current.isAuthenticated && current.snowball) {
+        clearPendingInviteSlug();
         if (sbFromUrl !== current.snowball.slug) {
-          window.localStorage.removeItem("pending_friend_slug");
           router.replace(`/snowball/${encodeURIComponent(sbFromUrl)}`);
         }
       }

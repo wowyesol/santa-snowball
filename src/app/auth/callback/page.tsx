@@ -3,10 +3,10 @@
 import React, { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  clearAllInviteStorage,
   clearPendingInviteSlug,
+  consumeOneTimeOAuthInviteSlug,
   getCurrentAuthAndSnowball,
-  getPendingInviteSlug,
-  savePendingInviteSlug,
 } from "@/lib/supabase";
 
 function AuthCallbackContent() {
@@ -17,39 +17,35 @@ function AuthCallbackContent() {
     let isMounted = true;
 
     async function handleOAuthCallback() {
-      // URL 쿼리 또는 로컬 스토리지(pending_friend_slug)에 보존된 친구 초대 코드(sb) 확인
+      // 1회용으로 전달된 친구 초대 슬러그를 읽어옴과 동시에 모든 저장소(localStorage, sessionStorage, cookie)에서 즉시 영구 삭제
       const querySb = searchParams.get("sb")?.trim() || null;
-      if (querySb) {
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("pending_friend_slug", querySb);
-        }
-        savePendingInviteSlug(querySb);
-      }
-      const effectiveSb =
-        querySb ||
-        (typeof window !== "undefined"
-          ? window.localStorage.getItem("pending_friend_slug")
-          : null) ||
-        getPendingInviteSlug();
+      const storedOneTimeSb = consumeOneTimeOAuthInviteSlug();
+      clearPendingInviteSlug();
 
-      // Supabase 클라이언트가 URL 해시/코드를 세션으로 교환할 시간을 짧게 확보 후 조회
+      const effectiveSb = querySb || storedOneTimeSb || null;
+
+      // Supabase 클라이언트가 URL 해시/코드를 세션으로 교환한 뒤 현재 계정 및 스노우볼 조회
       const authState = await getCurrentAuthAndSnowball();
       if (!isMounted) return;
 
-      // 1) 이미 스노우볼이 있는 기존 회원인 경우 -> 바로 S04(내 스노우볼) 또는 S05(친구 스노우볼)로 이동
+      // 1) 이미 스노우볼이 있는 기존 회원인 경우 -> 1회 이동 처리 후 저장소에는 아무 흔적도 남기지 않음
       if (authState.isAuthenticated && authState.snowball) {
         const mySlug = authState.snowball.slug;
+        clearPendingInviteSlug();
+
         if (effectiveSb && effectiveSb !== mySlug) {
-          clearPendingInviteSlug();
           router.replace(`/snowball/${encodeURIComponent(effectiveSb)}`);
           return;
         }
-        clearPendingInviteSlug();
+
+        if (effectiveSb === mySlug) {
+          clearAllInviteStorage();
+        }
         router.replace(`/snowball/${encodeURIComponent(mySlug)}`);
         return;
       }
 
-      // 2) 신규 회원(스노우볼 미생성)이거나 인증 실패 시 -> S02(/login)로 이동하여 약관 동의 및 닉네임 설정 진행
+      // 2) 신규 회원(스노우볼 미생성)이거나 인증 실패 시 -> S02(/login)로 이동하여 약관 동의 및 닉네임 설정 진행 (URL 쿼리로만 1회 전달)
       const nextUrl = effectiveSb
         ? `/login?sb=${encodeURIComponent(effectiveSb)}`
         : "/login";

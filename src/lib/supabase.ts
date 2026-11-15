@@ -263,8 +263,36 @@ export function isCampaignOpenDateReached(): boolean {
 
 const PENDING_INVITE_STORAGE_KEY = "pending_friend_slug";
 const LEGACY_INVITE_STORAGE_KEY = "santa_pending_invite_sb";
+const OAUTH_ONE_TIME_INVITE_KEY = "santa_oauth_invite_slug";
 const INVITED_BY_NICKNAME_KEY = "santa_invited_by_nickname";
+const LAST_AUTH_USER_ID_KEY = "santa_last_auth_user_id";
 const GLOBAL_TOAST_KEY = "santa_global_toast_msg";
+
+const INVITE_REDIRECT_KEYS = [
+  PENDING_INVITE_STORAGE_KEY,
+  LEGACY_INVITE_STORAGE_KEY,
+  OAUTH_ONE_TIME_INVITE_KEY,
+  "pending_slug",
+  "last_visited_slug",
+] as const;
+
+const ALL_INVITE_STORAGE_KEYS = [
+  ...INVITE_REDIRECT_KEYS,
+  INVITED_BY_NICKNAME_KEY,
+  "referrer",
+  "invited_by",
+] as const;
+
+function expireCookieKeys(keys: readonly string[]): void {
+  if (typeof document === "undefined") return;
+  for (const key of keys) {
+    try {
+      document.cookie = `${key}=; path=/; max-age=0; SameSite=Lax`;
+    } catch {
+      // 쿠키 접근 제한 환경 무시
+    }
+  }
+}
 
 export function notifyAuthChanged(): void {
   if (typeof window !== "undefined") {
@@ -290,51 +318,143 @@ export function consumeFlashToast(): string | null {
   return msg;
 }
 
-export function savePendingInviteSlug(slug: string): void {
+/**
+ * OAuth 로그인 버튼 클릭 직전에만 1회용으로 친구 슬러그를 임시 보관합니다.
+ */
+export function saveOneTimeOAuthInviteSlug(slug: string): void {
   if (typeof window === "undefined") return;
   const trimmed = slug.trim();
-  if (trimmed) {
+  if (!trimmed) return;
+  try {
+    window.sessionStorage.setItem(OAUTH_ONE_TIME_INVITE_KEY, trimmed);
     window.localStorage.setItem(PENDING_INVITE_STORAGE_KEY, trimmed);
-    window.localStorage.setItem(LEGACY_INVITE_STORAGE_KEY, trimmed);
+  } catch {
+    // 스토리지 접근 제한 환경 무시
   }
+}
+
+/**
+ * OAuth 콜백 직후 1회용 친구 슬러그를 읽어옴과 동시에 모든 저장소에서 즉시 영구 삭제합니다.
+ */
+export function consumeOneTimeOAuthInviteSlug(): string | null {
+  if (typeof window === "undefined") return null;
+  let found: string | null = null;
+  try {
+    found =
+      window.sessionStorage.getItem(OAUTH_ONE_TIME_INVITE_KEY) ||
+      window.localStorage.getItem(PENDING_INVITE_STORAGE_KEY) ||
+      window.localStorage.getItem(LEGACY_INVITE_STORAGE_KEY);
+  } catch {
+    found = null;
+  }
+  clearPendingInviteSlug();
+  return found && found.trim() !== "" ? found.trim() : null;
+}
+
+export function savePendingInviteSlug(slug: string): void {
+  saveOneTimeOAuthInviteSlug(slug);
 }
 
 export function getPendingInviteSlug(): string | null {
   if (typeof window === "undefined") return null;
-  const val =
-    window.localStorage.getItem(PENDING_INVITE_STORAGE_KEY) ||
-    window.localStorage.getItem(LEGACY_INVITE_STORAGE_KEY);
-  return val && val.trim() !== "" ? val.trim() : null;
-}
-
-export function clearPendingInviteSlug(): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(PENDING_INVITE_STORAGE_KEY);
-  window.localStorage.removeItem(LEGACY_INVITE_STORAGE_KEY);
+  try {
+    const val =
+      window.sessionStorage.getItem(OAUTH_ONE_TIME_INVITE_KEY) ||
+      window.localStorage.getItem(PENDING_INVITE_STORAGE_KEY) ||
+      window.localStorage.getItem(LEGACY_INVITE_STORAGE_KEY);
+    return val && val.trim() !== "" ? val.trim() : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
- * 친구 공유 링크(?sb=[slug])로 진입했을 때 초대한 친구의 닉네임을 저장하여
+ * 리다이렉트용 임시 초대 슬러그 키들을 localStorage / sessionStorage / cookie에서 모두 즉시 삭제합니다.
+ */
+export function clearPendingInviteSlug(): void {
+  if (typeof window === "undefined") return;
+  for (const key of INVITE_REDIRECT_KEYS) {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // 무시
+    }
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch {
+      // 무시
+    }
+  }
+  expireCookieKeys(INVITE_REDIRECT_KEYS);
+}
+
+/**
+ * 기본 루트(/) 접속, 로그아웃, 계정 전환 시 모든 초대/타겟/추천인 임시 스토리지 및 쿠키를 완전히 초기화합니다.
+ * (무신사 팝업 노출 기록 musinsa_popup_shown_${userId} 등은 절대 건드리지 않고 유지합니다.)
+ */
+export function clearAllInviteStorage(): void {
+  if (typeof window === "undefined") return;
+  for (const key of ALL_INVITE_STORAGE_KEYS) {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // 무시
+    }
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch {
+      // 무시
+    }
+  }
+  expireCookieKeys(ALL_INVITE_STORAGE_KEYS);
+}
+
+/**
+ * 친구 공유 링크(?sb=[slug])에서 로그인 플로우를 시작할 때 초대한 친구의 닉네임을 저장하여
  * 추후 S08(제미나이 가입 인증) 추천인 입력란에 자동으로 채워줍니다.
  */
 export function saveInvitedByNickname(nickname: string): void {
   if (typeof window === "undefined") return;
   const trimmed = nickname.trim();
   if (trimmed) {
-    window.localStorage.setItem(INVITED_BY_NICKNAME_KEY, trimmed);
+    try {
+      window.localStorage.setItem(INVITED_BY_NICKNAME_KEY, trimmed);
+    } catch {
+      // 무시
+    }
   }
 }
 
 export function getInvitedByNickname(): string | null {
   if (typeof window === "undefined") return null;
-  const val = window.localStorage.getItem(INVITED_BY_NICKNAME_KEY);
-  return val && val.trim() !== "" ? val.trim() : null;
+  try {
+    const val = window.localStorage.getItem(INVITED_BY_NICKNAME_KEY);
+    return val && val.trim() !== "" ? val.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearInvitedByNickname(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(INVITED_BY_NICKNAME_KEY);
+    window.sessionStorage.removeItem(INVITED_BY_NICKNAME_KEY);
+  } catch {
+    // 무시
+  }
 }
 
 export async function signOutAll(): Promise<void> {
   if (typeof window !== "undefined") {
-    window.localStorage.removeItem("santa_mock_auth_session");
-    window.localStorage.removeItem("santa_quick_user_slots_v1");
+    clearAllInviteStorage();
+    try {
+      window.localStorage.removeItem(LAST_AUTH_USER_ID_KEY);
+      window.localStorage.removeItem("santa_mock_auth_session");
+      window.localStorage.removeItem("santa_quick_user_slots_v1");
+    } catch {
+      // 무시
+    }
   }
   await supabase.auth.signOut();
   notifyAuthChanged();
@@ -359,11 +479,32 @@ export async function getCurrentAuthAndSnowball(): Promise<AuthSnowballState> {
 
   if (session?.user) {
     const user = session.user;
+
+    // 브라우저에서 로그인된 계정(user.id)이 이전 계정과 달라진 경우(계정 전환) 이전 계정의 초대/타겟 슬러그 흔적 즉시 초기화
+    if (typeof window !== "undefined") {
+      try {
+        const prevUserId = window.localStorage.getItem(LAST_AUTH_USER_ID_KEY);
+        if (prevUserId && prevUserId !== user.id) {
+          clearAllInviteStorage();
+        }
+        window.localStorage.setItem(LAST_AUTH_USER_ID_KEY, user.id);
+      } catch {
+        // 무시
+      }
+    }
+
     const snowball = await getSnowballByUserId(user.id);
     const metaName =
       (user.user_metadata?.full_name as string | undefined) ||
       (user.user_metadata?.name as string | undefined) ||
       null;
+
+    // 본인 스노우볼의 닉네임이나 슬러그가 초대자/타겟 값으로 남아있지 않도록 방어
+    if (snowball && typeof window !== "undefined") {
+      if (getInvitedByNickname() === snowball.nickname) {
+        clearInvitedByNickname();
+      }
+    }
 
     return {
       isAuthenticated: true,
@@ -372,6 +513,19 @@ export async function getCurrentAuthAndSnowball(): Promise<AuthSnowballState> {
       displayName: metaName,
       snowball,
     };
+  }
+
+  // 기존 로그인 세션이 만료되었거나 로그아웃된 상태로 전환된 경우 초대/타겟 스토리지 초기화
+  if (typeof window !== "undefined") {
+    try {
+      const prevUserId = window.localStorage.getItem(LAST_AUTH_USER_ID_KEY);
+      if (prevUserId) {
+        window.localStorage.removeItem(LAST_AUTH_USER_ID_KEY);
+        clearAllInviteStorage();
+      }
+    } catch {
+      // 무시
+    }
   }
 
   return {
@@ -384,12 +538,19 @@ export async function getCurrentAuthAndSnowball(): Promise<AuthSnowballState> {
 }
 
 export async function signInWithGoogle(inviteSlug?: string | null) {
-  if (typeof window !== "undefined" && inviteSlug) {
-    savePendingInviteSlug(inviteSlug);
+  const cleanInviteSlug = inviteSlug?.trim() || null;
+  if (typeof window !== "undefined") {
+    if (cleanInviteSlug) {
+      saveOneTimeOAuthInviteSlug(cleanInviteSlug);
+    } else {
+      clearAllInviteStorage();
+    }
   }
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const query = inviteSlug ? `?sb=${encodeURIComponent(inviteSlug)}` : "";
+  const query = cleanInviteSlug
+    ? `?sb=${encodeURIComponent(cleanInviteSlug)}`
+    : "";
   const redirectTo = `${origin}/auth/callback${query}`;
 
   return supabase.auth.signInWithOAuth({

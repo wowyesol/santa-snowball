@@ -7,23 +7,23 @@ import SnowballGraphic from "./SnowballGraphic";
 import InAppBrowserGuard from "./InAppBrowserGuard";
 import {
   Snowball,
+  clearAllInviteStorage,
   clearPendingInviteSlug,
   getCurrentAuthAndSnowball,
-  getPendingInviteSlug,
   getSnowballBySlug,
   saveInvitedByNickname,
-  savePendingInviteSlug,
   setFlashToast,
 } from "@/lib/supabase";
 
 /**
- * S01 첫 화면 & P00 무신사 팝업
- * - 비로그인 첫 진입 시 P00 무신사 20만 원 응모하기 팝업 자동 노출
- * - 일반 진입: 타이틀 + 중앙 스노우볼 + [로그인하고 시작하기] + 경품 안내 박스
- * - 친구 공유 링크 진입 (?sb=[slug]):
- *   ① 이미 로그인된 유저: targetSlug가 내 스노우볼 slug와 다르면 절대 내 스노우볼로 보내지 않고 즉시 친구 스노우볼 페이지(/snowball/[targetSlug], S05)로 이동!
- *   ② 비로그인 유저: S01 진입 즉시 localStorage.setItem('pending_friend_slug', targetSlug) 저장 -> 추후 OAuth 및 S02 완료 시 그 친구의 스노우볼(S05)로 이동!
- * - 존재하지 않는 스노우볼 주소 접속 시: "존재하지 않는 스노우볼입니다." 토스트 알림 후 S01(/)로 자동 이동
+ * S01 첫 화면 (기본 루트 `/` & 친구 초대 링크 `/?sb=[slug]`)
+ * - 순수 기본 루트(`/`) 접속 시:
+ *   ① 스토리지/쿠키에 남아있는 이전 초대/방문 슬러그를 즉시 모두 초기화
+ *   ② 로그인 상태면 무조건 현재 로그인한 본인의 스노우볼(`/snowball/[내_slug]`)로 이동
+ *   ③ 비로그인 상태면 초대 카드 없는 순수 기본 홈 랜딩 화면 노출 (로그인 시 무조건 본인 스노우볼로 이동)
+ * - 친구 공유 링크(`/?sb=[slug]`) 접속 시:
+ *   ① 이미 로그인된 유저: 내 스노우볼과 다르면 친구 스노우볼(S05)로, 내 스노우볼이면 내 스노우볼(S04)로 이동하며 임시 슬러그 즉시 삭제
+ *   ② 비로그인 유저: 단순 조회만으로는 영구 스토리지에 저장하지 않으며, 직접 [로그인하고 시작하기] 버튼을 누를 때만 `?sb=[slug]`를 1회용으로 전달
  */
 export default function LandingView() {
   const searchParams = useSearchParams();
@@ -39,7 +39,7 @@ export default function LandingView() {
     let isMounted = true;
 
     async function initS01() {
-      // 최우선으로 URL의 sb 파라미터 확인 (React searchParams + window.location.search 이중 체크로 누락 원천 차단)
+      // 현재 URL에 실제로 존재하는 ?sb 파라미터만 인정 (이전 방문 스토리지 참조 절대 금지)
       let targetSlug = sbParam;
       if (!targetSlug && typeof window !== "undefined") {
         const urlParams = new URLSearchParams(window.location.search);
@@ -49,62 +49,65 @@ export default function LandingView() {
         }
       }
 
-      // URL에 sb 파라미터가 있으면 진입 즉시 localStorage에 pending_friend_slug 저장!
-      if (targetSlug && typeof window !== "undefined") {
-        window.localStorage.setItem("pending_friend_slug", targetSlug);
-        savePendingInviteSlug(targetSlug);
-      }
+      // [핵심 원칙 1] 슬러그가 없는 순수 기본 루트(/) 접속 시:
+      // 남아있는 모든 초대/방문 슬러그 스토리지·쿠키를 즉시 삭제하고,
+      // 로그인 상태면 무조건 본인 스노우볼로, 비로그인 상태면 순수 기본 홈 랜딩 화면 표시!
+      if (!targetSlug) {
+        clearAllInviteStorage();
+        const authState = await getCurrentAuthAndSnowball();
+        if (!isMounted) return;
 
-      const authState = await getCurrentAuthAndSnowball();
-
-      // 1) 친구 공유 링크(?sb=[targetSlug]) 검증
-      let friendData: Snowball | null = null;
-      if (targetSlug) {
-        friendData = await getSnowballBySlug(targetSlug);
-        if (!friendData) {
-          // 존재하지 않거나 삭제된 스노우볼 주소로 접속 시: 토스트 알림 후 기본 S01로 이동
-          clearPendingInviteSlug();
-          setFlashToast("존재하지 않는 스노우볼입니다.");
-          if (isMounted) {
-            setFriendSnowball(null);
-            setChecking(false);
-            router.replace("/");
-          }
-          return;
-        }
-        // 존재하는 친구 스노우볼이면 초대 코드(pending_friend_slug)와 초대자 닉네임을 스토리지에 확정 저장
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("pending_friend_slug", friendData.slug);
-        }
-        savePendingInviteSlug(friendData.slug);
-        saveInvitedByNickname(friendData.nickname);
-      }
-
-      if (!isMounted) return;
-
-      // 2) [핵심 수정 ①] 이미 로그인되어 있고 내 스노우볼이 있는 유저인 경우:
-      //    URL의 targetSlug(또는 저장된 pending_friend_slug)를 최우선 확인하여 내 스노우볼 slug와 다르면
-      //    절대 내 스노우볼(S04)로 보내지 않고 즉시 친구 스노우볼 페이지(/snowball/[targetSlug], S05)로 이동!
-      if (authState.isAuthenticated && authState.snowball) {
-        const mySlug = authState.snowball.slug;
-        const effectiveTargetSlug =
-          friendData?.slug || targetSlug || getPendingInviteSlug();
-
-        if (effectiveTargetSlug && effectiveTargetSlug !== mySlug) {
-          clearPendingInviteSlug();
+        if (authState.isAuthenticated && authState.snowball) {
           router.replace(
-            `/snowball/${encodeURIComponent(effectiveTargetSlug)}`
+            `/snowball/${encodeURIComponent(authState.snowball.slug)}`
           );
           return;
         }
 
+        setFriendSnowball(null);
+        setChecking(false);
+        return;
+      }
+
+      // [핵심 원칙 2] 친구 공유 링크(?sb=[targetSlug]) 접속 시 검증 (단순 진입 시에는 스토리지에 슬러그 영구 저장 안 함)
+      clearPendingInviteSlug();
+      const [authState, friendData] = await Promise.all([
+        getCurrentAuthAndSnowball(),
+        getSnowballBySlug(targetSlug),
+      ]);
+
+      if (!friendData) {
+        clearAllInviteStorage();
+        setFlashToast("존재하지 않는 스노우볼입니다.");
+        if (isMounted) {
+          setFriendSnowball(null);
+          setChecking(false);
+          router.replace("/");
+        }
+        return;
+      }
+
+      if (!isMounted) return;
+
+      // 이미 로그인된 유저인 경우: 스토리지 저장 없이 즉시 분기 이동
+      if (authState.isAuthenticated && authState.snowball) {
+        const mySlug = authState.snowball.slug;
         clearPendingInviteSlug();
+
+        if (friendData.slug !== mySlug) {
+          saveInvitedByNickname(friendData.nickname);
+          router.replace(
+            `/snowball/${encodeURIComponent(friendData.slug)}`
+          );
+          return;
+        }
+
+        clearAllInviteStorage();
         router.replace(`/snowball/${encodeURIComponent(mySlug)}`);
         return;
       }
 
       setFriendSnowball(friendData);
-      // 비로그인 랜딩(S01)에서는 무신사 팝업을 띄우지 않고 인앱 브라우저 안내(InAppBrowserGuard)만 최우선 동작하도록 분리
       setChecking(false);
     }
 
@@ -116,17 +119,12 @@ export default function LandingView() {
   }, [sbParam, router]);
 
   const handleGoToS02 = () => {
-    const targetSlug = friendSnowball?.slug || sbParam || getPendingInviteSlug();
-    if (targetSlug) {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("pending_friend_slug", targetSlug);
-      }
-      savePendingInviteSlug(targetSlug);
-      if (friendSnowball) {
-        saveInvitedByNickname(friendSnowball.nickname);
-      }
-      router.push(`/login?sb=${encodeURIComponent(targetSlug)}`);
+    // 오직 현재 친구 초대 링크(?sb=...) 화면에서 직접 로그인 시작 버튼을 눌렀을 때만 friend_slug 전달
+    if (sbParam && friendSnowball) {
+      saveInvitedByNickname(friendSnowball.nickname);
+      router.push(`/login?sb=${encodeURIComponent(friendSnowball.slug)}`);
     } else {
+      clearAllInviteStorage();
       router.push("/login");
     }
   };
@@ -182,8 +180,8 @@ export default function LandingView() {
             className="w-full h-auto block pointer-events-none select-none"
           />
 
-          {/* 상단 메인 타이틀 영역 (스노우볼 좌표와 완전히 분리되어 상단 밤하늘 영역에 배치) */}
-          <div className="absolute inset-x-0 top-[11%] z-20 px-5 flex flex-col items-center text-center pointer-events-none">
+          {/* 상단 메인 타이틀 영역: 산타 썰매(11%~15.6%) 아래 ~ 스노우볼 유리구(36%) 위 정중앙 빈 밤하늘 영역(26%)에 정확히 배치 */}
+          <div className="absolute inset-x-0 top-[26%] -translate-y-1/2 z-20 px-5 flex flex-col items-center text-center pointer-events-none">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo.png"

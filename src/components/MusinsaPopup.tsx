@@ -9,16 +9,12 @@ const MUSINSA_POPUP_GLOBAL_KEY = "musinsa_popup_shown";
 export function hasShownMusinsaPopup(userId?: string | null): boolean {
   if (typeof window === "undefined") return true;
   try {
-    if (window.localStorage.getItem(MUSINSA_POPUP_GLOBAL_KEY) === "true") {
-      return true;
+    if (userId) {
+      return (
+        window.localStorage.getItem(`musinsa_popup_shown_${userId}`) === "true"
+      );
     }
-    if (
-      userId &&
-      window.localStorage.getItem(`musinsa_popup_shown_${userId}`) === "true"
-    ) {
-      return true;
-    }
-    return false;
+    return window.localStorage.getItem(MUSINSA_POPUP_GLOBAL_KEY) === "true";
   } catch {
     return false;
   }
@@ -27,9 +23,10 @@ export function hasShownMusinsaPopup(userId?: string | null): boolean {
 export function markMusinsaPopupShown(userId?: string | null): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(MUSINSA_POPUP_GLOBAL_KEY, "true");
     if (userId) {
       window.localStorage.setItem(`musinsa_popup_shown_${userId}`, "true");
+    } else {
+      window.localStorage.setItem(MUSINSA_POPUP_GLOBAL_KEY, "true");
     }
   } catch {
     // 스토리지 접근 제한 환경 무시
