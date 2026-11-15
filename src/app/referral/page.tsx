@@ -17,12 +17,12 @@ interface ReferralLeaderItem {
   rank: number;
   isTied: boolean;
   nickname: string;
-  referralCount: number;
+  ticketCount: number;
 }
 
 interface MyReferralRankRecord {
   nickname: string;
-  referralCount: number;
+  ticketCount: number;
   rank: number | null;
   isTied: boolean;
 }
@@ -33,7 +33,7 @@ interface MyReferralRankRecord {
  * - 사인업 레벨 진행바: Lv.0 -> Lv.1 -> Lv.3
  * - 업그레이드 단계 미리보기: Lv.0(민트) / Lv.1(핑크) / Lv.3(골드) 실제 스노우볼 이미지 표시
  * - 나를 추천인으로 입력한 친구 N명 목록 (승인 +50 · LV+1 / 인증 심사 중)
- * - 🏆 실시간 산타 초대 랭킹 (TOP 10 + 내 현재 기록/순위)
+ * - 🏆 실시간 응모권 랭킹 (누적 획득 응모권 기준 TOP 10 + 내 현재 기록/순위)
  */
 export default function ReferralPage() {
   const [loading, setLoading] = useState<boolean>(true);
@@ -77,7 +77,11 @@ export default function ReferralPage() {
       setReferrals(list);
 
       if (leaderboardData) {
-        setLeaders(Array.isArray(leaderboardData.leaders) ? leaderboardData.leaders : []);
+        setLeaders(
+          Array.isArray(leaderboardData.leaders)
+            ? leaderboardData.leaders.slice(0, 10)
+            : []
+        );
         setMyRankRecord(leaderboardData.myRecord ?? null);
       }
 
@@ -347,11 +351,11 @@ export default function ReferralPage() {
           )}
         </section>
 
-        {/* 5. 🏆 실시간 산타 초대 랭킹 (TOP 10 & 내 현재 기록) */}
+        {/* 5. 🏆 실시간 응모권 랭킹 (누적 획득 응모권 TOP 10 & 내 현재 기록) */}
         <section className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)] text-left mb-5">
           <div className="flex items-center justify-between gap-2 mb-3">
             <h2 className="text-xs font-extrabold text-[#2C2F63]">
-              🏆 실시간 산타 초대 랭킹
+              🏆 실시간 응모권 랭킹
             </h2>
             <span className="px-2.5 py-0.5 rounded-full bg-[#E8ECFA] text-[#2C2F63] text-[10px] font-extrabold">
               TOP 10
@@ -361,17 +365,17 @@ export default function ReferralPage() {
           {/* 내 현재 기록 안내 박스 (10줄 밖에 있더라도 실제 공동 순위 정확히 표시) */}
           <div className="w-full p-3 rounded-xl bg-[#E8ECFA]/80 border border-[#2C2F63]/15 mb-3">
             {myRankRecord &&
-            myRankRecord.referralCount >= 1 &&
+            myRankRecord.ticketCount >= 1 &&
             myRankRecord.rank !== null ? (
               <p className="text-xs font-extrabold text-[#2C2F63] text-center break-keep">
-                내 현재 기록: {myRankRecord.referralCount}명 초대 ·{" "}
+                내 현재 기록: 누적 응모권 {myRankRecord.ticketCount}장 ·{" "}
                 {myRankRecord.isTied
                   ? `공동 ${myRankRecord.rank}위`
                   : `현재 ${myRankRecord.rank}위`}
               </p>
             ) : (
               <p className="text-xs font-extrabold text-[#2C2F63] text-center break-keep">
-                첫 친구를 초대하고 랭킹에 이름을 올려보세요!
+                응모권을 모으고 실시간 랭킹에 이름을 올려보세요!
               </p>
             )}
           </div>
@@ -379,15 +383,15 @@ export default function ReferralPage() {
           {leaders.length === 0 ? (
             <div className="w-full py-6 px-4 rounded-xl border border-dashed border-[#2C2F63]/20 bg-[#F8F9FE] text-center">
               <p className="text-xs font-extrabold text-[#2C2F63] mb-1">
-                아직 집계된 초대 랭킹이 없어요
+                아직 집계된 응모권 랭킹이 없어요
               </p>
               <p className="text-[11px] font-semibold text-[#2C2F63]/70 break-keep">
-                친구를 가장 먼저 초대해 1등 산타가 되어 보세요!
+                응모권을 가장 먼저 모아 1등 산타가 되어 보세요!
               </p>
             </div>
           ) : (
             <div className="space-y-2">
-              {leaders.map((leader) => {
+              {leaders.slice(0, 10).map((leader) => {
                 const isMe = leader.nickname === mySnowball.nickname;
                 const medal =
                   leader.rank === 1
@@ -440,7 +444,7 @@ export default function ReferralPage() {
                     </div>
 
                     <span className="shrink-0 px-2.5 py-1 rounded-full bg-white/90 border border-[#2C2F63]/15 text-[11px] font-extrabold text-[#2C2F63] leading-none">
-                      {leader.referralCount}명
+                      {leader.ticketCount}장
                     </span>
                   </div>
                 );

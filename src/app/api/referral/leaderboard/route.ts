@@ -16,23 +16,36 @@ export interface ReferralLeaderItem {
   rank: number;
   isTied: boolean;
   nickname: string;
-  referralCount: number;
+  ticketCount: number;
 }
 
 export interface MyReferralRankRecord {
   nickname: string;
-  referralCount: number;
+  ticketCount: number;
   rank: number | null;
   isTied: boolean;
 }
 
+function isApprovedVerificationStatus(status?: string | null): boolean {
+  const clean = (status || "").trim();
+  return clean === "승인" || clean.toLowerCase() === "approved";
+}
+
+function parseTimestampMs(raw?: string | null): number | null {
+  if (!raw) return null;
+  const ms = new Date(raw).getTime();
+  return Number.isNaN(ms) ? null : ms;
+}
+
 /**
- * 실시간 산타 초대 랭킹 조회 API (/api/referral/leaderboard)
+ * 실시간 누적 획득 응모권 랭킹 조회 API (/api/referral/leaderboard)
  * - 서버/브라우저 캐시를 완전히 비활성화(force-dynamic, revalidate=0, fetch cache='no-store')하고,
- *   오직 현재 Supabase snowballs 테이블에 실제로 존재하는 활성 행(Row)만 실시간 조회하여 집계합니다.
- * - 탈퇴/삭제되어 snowballs 테이블에서 사라진 추천인이나 피추천인은 즉시 집계에서 제외됩니다.
- * - Dense Rank(밀집 순위) 기준: 초대 인원수(referralCount)가 같은 유저들은 모두 동일한 순위와 메달을 부여하며,
- *   동점자가 2명 이상인 경우 isTied = true('공동 N위')로 표기합니다.
+ *   오직 현재 Supabase snowballs 테이블에 실제로 존재하는 활성 행(Row)만 실시간 조회하여 집계합니다 (탈퇴 계정 완벽 제외).
+ * - 산정 기준: 총 누적 획득 응모권 수 (현재 보유 잔여 응모권 + 이미 경품에 배분해 사용한 응모권 합계).
+ *   경품에 응모권을 배분/사용하더라도 누적 획득 응모권 수치는 절대 줄어들지 않습니다.
+ * - 어드민 승인 전(대기중/심사중/pending) 또는 반려(반려/rejected) 상태인 제미나이 인증 건은 응모권 수에 절대 포함되지 않습니다.
+ * - 누적 획득 응모권이 1장 이상인 유저만 랭킹 대상에 포함합니다.
+ * - 공동 순위 처리(Dense Rank: 1, 1, 1, 2, 2, 3...) 및 최대 10명(.slice(0, 10)) 엄격 제한을 적용합니다.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -59,179 +72,302 @@ export async function GET(req: NextRequest) {
     const myNicknameParam =
       req.nextUrl.searchParams.get("nickname")?.trim() || null;
 
-    const [snowballsRes, verificationsRes] = await Promise.all([
-      liveSupabase
-        .from("snowballs")
-        .select("id, nickname, slug, referrer_code, created_at"),
-      liveSupabase
-        .from("gemini_verifications")
-        .select("id, snowball_id, nickname, referrer_slug, status, created_at")
-        .order("created_at", { ascending: true }),
-    ]);
+    const [snowballsRes, allocationsRes, verificationsRes, lettersRes] =
+      await Promise.all([
+        liveSupabase
+          .from("snowballs")
+          .select(
+            "id, user_id, nickname, slug, ticket_count, gemini_verified, gemini_status, created_at"
+          ),
+        liveSupabase
+          .from("raffle_allocations")
+          .select("snowball_id, allocated_tickets, created_at"),
+        liveSupabase
+          .from("gemini_verifications")
+          .select(
+            "id, snowball_id, nickname, referrer_slug, status, created_at"
+          )
+          .order("created_at", { ascending: true }),
+        liveSupabase
+          .from("letters")
+          .select(
+            "id, snowball_id, sender_user_id, sender_name, is_hidden, created_at"
+          )
+          .order("created_at", { ascending: true }),
+      ]);
 
     const snowballs = snowballsRes.data ?? [];
+    const allocations = allocationsRes.data ?? [];
     const verifications = verificationsRes.data ?? [];
+    const letters = lettersRes.data ?? [];
 
-    // 현재 snowballs 테이블에 실제로 존재하는 계정만 유효한 유저로 인정
-    const activeSnowballIds = new Set<string>();
-    const activeNicknames = new Set<string>();
-    const slugToActiveNickname = new Map<string, string>();
-    const nicknameToActiveId = new Map<string, string>();
-    const nicknameCreatedAt = new Map<string, number>();
+    // 1) 현재 snowballs 테이블에 실제로 존재하는 활성 계정만 등록 (탈퇴 계정 완벽 제외)
+    interface ActiveUserMeta {
+      id: string;
+      userId: string | null;
+      nickname: string;
+      slug: string;
+      dbTicketCount: number;
+      createdAtMs: number;
+    }
+
+    const activeUsersById = new Map<string, ActiveUserMeta>();
+    const activeIdByNickname = new Map<string, string>();
+    const activeNicknameBySlug = new Map<string, string>();
+    const activeIdByAuthUserId = new Map<string, string>();
 
     for (const sb of snowballs) {
       const id = (sb.id || "").trim();
       const nick = (sb.nickname || "").trim();
       const slug = (sb.slug || "").trim();
+      const userId = sb.user_id ? String(sb.user_id).trim() : null;
       if (!id || !nick) continue;
 
-      activeSnowballIds.add(id);
-      activeNicknames.add(nick);
-      nicknameToActiveId.set(nick, id);
-      if (slug) {
-        slugToActiveNickname.set(slug, nick);
-      }
+      const createdAtMs =
+        parseTimestampMs(sb.created_at) ?? Number.MAX_SAFE_INTEGER;
 
-      const createdMs = sb.created_at
-        ? new Date(sb.created_at).getTime()
-        : Number.MAX_SAFE_INTEGER;
-      nicknameCreatedAt.set(nick, createdMs);
-    }
-
-    // 추천인 코드(slug 또는 닉네임)가 현재 snowballs에 실제 존재하는 계정인지 검증 후 닉네임 반환
-    const resolveActiveReferrerNickname = (rawRef: string): string | null => {
-      const clean = rawRef.trim();
-      if (!clean) return null;
-      const bySlug = slugToActiveNickname.get(clean);
-      if (bySlug) return bySlug;
-      if (activeNicknames.has(clean)) return clean;
-      return null;
-    };
-
-    // 추천인 닉네임별 실제 존재하는 피추천 친구(snowball.id 기준) 고유키 Set 집계
-    const statsMap = new Map<
-      string,
-      { referredSet: Set<string>; latestAchievedAt: number }
-    >();
-
-    const recordReferral = (
-      referrerNick: string,
-      friendSnowballId: string,
-      createdAtStr?: string | null
-    ) => {
-      if (!activeNicknames.has(referrerNick)) return;
-      if (!activeSnowballIds.has(friendSnowballId)) return;
-
-      const referrerSnowballId = nicknameToActiveId.get(referrerNick);
-      if (!referrerSnowballId || referrerSnowballId === friendSnowballId) return;
-
-      let entry = statsMap.get(referrerNick);
-      if (!entry) {
-        entry = { referredSet: new Set<string>(), latestAchievedAt: 0 };
-        statsMap.set(referrerNick, entry);
-      }
-
-      if (!entry.referredSet.has(friendSnowballId)) {
-        entry.referredSet.add(friendSnowballId);
-        const ts = createdAtStr ? new Date(createdAtStr).getTime() : Date.now();
-        if (!Number.isNaN(ts) && ts > entry.latestAchievedAt) {
-          entry.latestAchievedAt = ts;
-        }
-      }
-    };
-
-    // 1) gemini_verifications의 referrer_slug 기준 집계 (반려 제외 + 추천인/피추천인 모두 현재 snowballs에 실존할 때만 반영)
-    for (const v of verifications) {
-      if (v.status === "반려") continue;
-      const resolvedRefNick = resolveActiveReferrerNickname(
-        v.referrer_slug || ""
-      );
-      if (!resolvedRefNick) continue;
-
-      const rawSbId = (v.snowball_id || "").trim();
-      const rawFriendNick = (v.nickname || "").trim();
-      const activeFriendId =
-        rawSbId && activeSnowballIds.has(rawSbId)
-          ? rawSbId
-          : rawFriendNick
-          ? nicknameToActiveId.get(rawFriendNick) ?? null
-          : null;
-
-      if (!activeFriendId) continue;
-      recordReferral(resolvedRefNick, activeFriendId, v.created_at);
-    }
-
-    // 2) snowballs 테이블의 referrer_code에 기록된 초대 관계도 함께 반영 (추천인이 현재 snowballs에 실존할 때만 반영)
-    for (const sb of snowballs) {
-      const friendId = (sb.id || "").trim();
-      if (!friendId || !activeSnowballIds.has(friendId)) continue;
-
-      const resolvedRefNick = resolveActiveReferrerNickname(
-        sb.referrer_code || ""
-      );
-      if (!resolvedRefNick) continue;
-
-      recordReferral(resolvedRefNick, friendId, sb.created_at);
-    }
-
-    // 현재 snowballs에 실존하며 referralCount >= 1인 유저만 추출 후 초대 수 내림차순 정렬
-    const sortedRaw = Array.from(statsMap.entries())
-      .filter(([nickname]) => activeNicknames.has(nickname))
-      .map(([nickname, info]) => ({
-        nickname,
-        referralCount: info.referredSet.size,
-        latestAchievedAt: info.latestAchievedAt || Number.MAX_SAFE_INTEGER,
-        userCreatedAt:
-          nicknameCreatedAt.get(nickname) ?? Number.MAX_SAFE_INTEGER,
-      }))
-      .filter((item) => item.referralCount >= 1)
-      .sort((a, b) => {
-        if (b.referralCount !== a.referralCount) {
-          return b.referralCount - a.referralCount;
-        }
-        if (a.latestAchievedAt !== b.latestAchievedAt) {
-          return a.latestAchievedAt - b.latestAchievedAt;
-        }
-        return a.userCreatedAt - b.userCreatedAt;
+      activeUsersById.set(id, {
+        id,
+        userId,
+        nickname: nick,
+        slug,
+        dbTicketCount: Math.max(0, Number(sb.ticket_count) || 0),
+        createdAtMs,
       });
 
-    // 초대 인원수(referralCount)별 동점자 수 집계 및 Dense Rank(1위, 2위, 3위...) 부여
+      activeIdByNickname.set(nick, id);
+      if (slug) {
+        activeNicknameBySlug.set(slug, nick);
+      }
+      if (userId) {
+        activeIdByAuthUserId.set(userId, id);
+      }
+    }
+
+    const resolveActiveReferrerId = (rawRef?: string | null): string | null => {
+      const clean = (rawRef || "").trim();
+      if (!clean) return null;
+      const nickFromSlug = activeNicknameBySlug.get(clean);
+      const targetNick = nickFromSlug || clean;
+      return activeIdByNickname.get(targetNick) ?? null;
+    };
+
+    // 2) 경품 응모에 이미 배분해 사용한 응모권 합계 집계 (raffle_allocations)
+    const allocatedBySnowballId = new Map<string, number>();
+    for (const row of allocations) {
+      const sid = (row.snowball_id || "").trim();
+      if (!sid || !activeUsersById.has(sid)) continue;
+      const qty = Math.max(0, Number(row.allocated_tickets) || 0);
+      if (qty <= 0) continue;
+      allocatedBySnowballId.set(
+        sid,
+        (allocatedBySnowballId.get(sid) ?? 0) + qty
+      );
+    }
+
+    // 3) 편지 수·발신 집계 및 달성 시각 추적 (보낸 편지 보상은 최대 10통까지만 인정)
+    const receivedLetterCountById = new Map<string, number>();
+    const sentLetterCountById = new Map<string, number>();
+    const latestAchievedAtById = new Map<string, number>();
+
+    for (const [id, meta] of Array.from(activeUsersById.entries())) {
+      latestAchievedAtById.set(id, meta.createdAtMs);
+    }
+
+    const recordAchievedAt = (snowballId: string, rawDate?: string | null) => {
+      const ts = parseTimestampMs(rawDate);
+      if (ts === null) return;
+      const prev = latestAchievedAtById.get(snowballId);
+      if (prev === undefined || prev === Number.MAX_SAFE_INTEGER || ts > prev) {
+        latestAchievedAtById.set(snowballId, ts);
+      }
+    };
+
+    for (const letter of letters) {
+      const receiverId = (letter.snowball_id || "").trim();
+      if (
+        receiverId &&
+        activeUsersById.has(receiverId) &&
+        letter.is_hidden !== true
+      ) {
+        receivedLetterCountById.set(
+          receiverId,
+          (receivedLetterCountById.get(receiverId) ?? 0) + 1
+        );
+        recordAchievedAt(receiverId, letter.created_at);
+      }
+
+      const rawSenderUid = letter.sender_user_id
+        ? String(letter.sender_user_id).trim()
+        : "";
+      const rawSenderName = (letter.sender_name || "").trim();
+      const senderSnowballId =
+        (rawSenderUid &&
+          (activeIdByAuthUserId.get(rawSenderUid) ??
+            (activeUsersById.has(rawSenderUid) ? rawSenderUid : null))) ||
+        (rawSenderName ? activeIdByNickname.get(rawSenderName) ?? null : null);
+
+      if (senderSnowballId && senderSnowballId !== receiverId) {
+        const nextSent = (sentLetterCountById.get(senderSnowballId) ?? 0) + 1;
+        sentLetterCountById.set(senderSnowballId, nextSent);
+        if (nextSent <= 10) {
+          recordAchievedAt(senderSnowballId, letter.created_at);
+        }
+      }
+    }
+
+    // 4) 제미나이 인증 검증: 오직 status === '승인' 건만 인정하고, 대기중(pending)/반려(rejected) 건은 철저히 배제
+    const approvedSelfById = new Set<string>();
+    const approvedRefFriendsById = new Map<string, Set<string>>();
+    const unapprovedRefCountById = new Map<string, number>();
+
+    for (const v of verifications) {
+      const rawSbId = (v.snowball_id || "").trim();
+      const rawNick = (v.nickname || "").trim();
+      const ownerId =
+        rawSbId && activeUsersById.has(rawSbId)
+          ? rawSbId
+          : rawNick
+          ? activeIdByNickname.get(rawNick) ?? null
+          : null;
+
+      const isApproved = isApprovedVerificationStatus(v.status);
+
+      if (ownerId && isApproved && !approvedSelfById.has(ownerId)) {
+        approvedSelfById.add(ownerId);
+        recordAchievedAt(ownerId, v.created_at);
+      }
+
+      const referrerId = resolveActiveReferrerId(v.referrer_slug);
+      if (referrerId && referrerId !== ownerId) {
+        // 추천 보상(+50장)은 피추천인이 현재 snowballs에 실존하고 어드민 '승인' 완료된 경우에만 인정
+        if (isApproved && ownerId && activeUsersById.has(ownerId)) {
+          let refSet = approvedRefFriendsById.get(referrerId);
+          if (!refSet) {
+            refSet = new Set<string>();
+            approvedRefFriendsById.set(referrerId, refSet);
+          }
+          if (!refSet.has(ownerId)) {
+            refSet.add(ownerId);
+            recordAchievedAt(referrerId, v.created_at);
+          }
+        } else {
+          unapprovedRefCountById.set(
+            referrerId,
+            (unapprovedRefCountById.get(referrerId) ?? 0) + 1
+          );
+        }
+      }
+    }
+
+    // 5) 유저별 총 누적 획득 응모권 수 계산 및 정렬용 목록 생성
+    interface RawRankEntry {
+      nickname: string;
+      ticketCount: number;
+      latestAchievedAt: number;
+      userCreatedAt: number;
+    }
+
+    const rawEntries: RawRankEntry[] = [];
+
+    for (const [id, meta] of Array.from(activeUsersById.entries())) {
+      const allocated = allocatedBySnowballId.get(id) ?? 0;
+      // getTicketSummary와 동일하게 잔여 응모권 = max(0, dbTicketCount - allocated)이므로,
+      // (현재 보유 잔여 응모권 + 이미 경품에 응모/배분해 사용한 응모권 합계) = max(dbTicketCount, allocated)
+      const available = Math.max(0, meta.dbTicketCount - allocated);
+      let cumulativeTickets = available + allocated;
+
+      // 승인되지 않은(pending / rejected) 제미나이 인증 보너스가 섞여 있는지 엄격 검증하여 차감 보호
+      const receivedCount = receivedLetterCountById.get(id) ?? 0;
+      const sentRewardCount = Math.min(10, sentLetterCountById.get(id) ?? 0);
+      const hasApprovedSelf = approvedSelfById.has(id);
+      const approvedRefCount = approvedRefFriendsById.get(id)?.size ?? 0;
+
+      const verifiedFormulaMax =
+        1 +
+        receivedCount +
+        sentRewardCount +
+        (hasApprovedSelf ? 100 : 0) +
+        approvedRefCount * 50;
+
+      if (
+        !hasApprovedSelf &&
+        cumulativeTickets - verifiedFormulaMax >= 90
+      ) {
+        cumulativeTickets = Math.max(0, cumulativeTickets - 100);
+      }
+
+      let remainingUnapprovedRefs = unapprovedRefCountById.get(id) ?? 0;
+      while (
+        remainingUnapprovedRefs > 0 &&
+        cumulativeTickets - verifiedFormulaMax >= 45
+      ) {
+        cumulativeTickets = Math.max(0, cumulativeTickets - 50);
+        remainingUnapprovedRefs -= 1;
+      }
+
+      if (cumulativeTickets >= 1) {
+        rawEntries.push({
+          nickname: meta.nickname,
+          ticketCount: cumulativeTickets,
+          latestAchievedAt:
+            latestAchievedAtById.get(id) ?? meta.createdAtMs,
+          userCreatedAt: meta.createdAtMs,
+        });
+      }
+    }
+
+    // 누적 획득 응모권 내림차순 -> 먼저 달성한 순(latestAchievedAt 오름차순) -> 생성일(created_at 오름차순) 정렬
+    rawEntries.sort((a, b) => {
+      if (b.ticketCount !== a.ticketCount) {
+        return b.ticketCount - a.ticketCount;
+      }
+      if (a.latestAchievedAt !== b.latestAchievedAt) {
+        return a.latestAchievedAt - b.latestAchievedAt;
+      }
+      if (a.userCreatedAt !== b.userCreatedAt) {
+        return a.userCreatedAt - b.userCreatedAt;
+      }
+      return a.nickname.localeCompare(b.nickname, "ko");
+    });
+
+    // 6) Dense Rank(밀집 순위: 1, 1, 1, 1, 1, 2, 2, 3, 3, 3) 부여
     const countFrequency = new Map<number, number>();
     const countToDenseRank = new Map<number, number>();
     let currentDenseRank = 0;
 
-    for (const item of sortedRaw) {
+    for (const item of rawEntries) {
       countFrequency.set(
-        item.referralCount,
-        (countFrequency.get(item.referralCount) ?? 0) + 1
+        item.ticketCount,
+        (countFrequency.get(item.ticketCount) ?? 0) + 1
       );
-      if (!countToDenseRank.has(item.referralCount)) {
+      if (!countToDenseRank.has(item.ticketCount)) {
         currentDenseRank += 1;
-        countToDenseRank.set(item.referralCount, currentDenseRank);
+        countToDenseRank.set(item.ticketCount, currentDenseRank);
       }
     }
 
-    const rankedAll: ReferralLeaderItem[] = sortedRaw.map((item) => {
-      const rank = countToDenseRank.get(item.referralCount) ?? 1;
-      const isTied = (countFrequency.get(item.referralCount) ?? 1) >= 2;
+    const rankedAll: ReferralLeaderItem[] = rawEntries.map((item) => {
+      const rank = countToDenseRank.get(item.ticketCount) ?? 1;
+      const isTied = (countFrequency.get(item.ticketCount) ?? 1) >= 2;
       return {
         rank,
         isTied,
         nickname: item.nickname,
-        referralCount: item.referralCount,
+        ticketCount: item.ticketCount,
       };
     });
 
-    // UI 길이 보호: 화면 리스트에는 최대 10줄(TOP 10 항목)까지만 반환
+    // 공동 순위자가 아무리 많더라도 랭킹 보드에는 최대 10명(상위 10개 행)까지만 엄격 제한
     const leaders: ReferralLeaderItem[] = rankedAll.slice(0, 10);
 
-    // 내 기록도 현재 snowballs 테이블에 실존하는 닉네임인 경우에만 반환
+    // 내 현재 기록 조회 (현재 snowballs 테이블에 실존하는 계정인 경우에만 반환)
     let myRecord: MyReferralRankRecord | null = null;
-    if (myNicknameParam && activeNicknames.has(myNicknameParam)) {
+    if (myNicknameParam && activeIdByNickname.has(myNicknameParam)) {
       const found = rankedAll.find((r) => r.nickname === myNicknameParam);
       myRecord = {
         nickname: myNicknameParam,
-        referralCount: found ? found.referralCount : 0,
+        ticketCount: found ? found.ticketCount : 0,
         rank: found ? found.rank : null,
         isTied: found ? found.isTied : false,
       };
