@@ -169,8 +169,21 @@ function LoginS02Content() {
     setErrorMsg(null);
     setOauthLoading(true);
     try {
+      const liveUrlSb =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("sb")?.trim() || null
+          : urlSb;
+
       const effectiveInvite =
-        urlSb && friendSnowball ? friendSnowball.slug : urlSb || null;
+        liveUrlSb && friendSnowball
+          ? friendSnowball.slug
+          : liveUrlSb || null;
+
+      if (!effectiveInvite) {
+        // 기본 홈(/)을 통해 들어온 순수 로그인 시 OAuth 시작 직전 한 번 더 슬러그 스토리지 완전 초기화
+        clearAllInviteStorage();
+      }
+
       const { error } = await signInWithGoogle(effectiveInvite);
       if (error) {
         setErrorMsg(`구글 로그인 안내: ${error.message}`);
@@ -185,17 +198,8 @@ function LoginS02Content() {
   };
 
   const handleChangeAccount = async () => {
+    // 계정 변경(로그아웃) 시 signOutAll() 내부에서 모든 슬러그 스토리지를 삭제하고 window.location.replace('/')로 하드 이동
     await signOutAll();
-    setAuthState({
-      isAuthenticated: false,
-      userId: null,
-      email: null,
-      displayName: null,
-      snowball: null,
-    });
-    setNickname("");
-    setNickStatus("idle");
-    setErrorMsg(null);
   };
 
   const isFormValid =

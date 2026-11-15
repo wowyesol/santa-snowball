@@ -264,16 +264,31 @@ export function isCampaignOpenDateReached(): boolean {
 const PENDING_INVITE_STORAGE_KEY = "pending_friend_slug";
 const LEGACY_INVITE_STORAGE_KEY = "santa_pending_invite_sb";
 const OAUTH_ONE_TIME_INVITE_KEY = "santa_oauth_invite_slug";
+const OAUTH_ONE_TIME_INVITE_TS_KEY = "santa_oauth_invite_ts";
 const INVITED_BY_NICKNAME_KEY = "santa_invited_by_nickname";
-const LAST_AUTH_USER_ID_KEY = "santa_last_auth_user_id";
+const LAST_AUTH_USER_ID_KEY = "last_auth_user_id";
+const LEGACY_LAST_AUTH_USER_ID_KEY = "santa_last_auth_user_id";
+const SELF_HEAL_VERSION_KEY = "santa_slug_self_heal_v2";
 const GLOBAL_TOAST_KEY = "santa_global_toast_msg";
+
+// 로그아웃 진행 중일 때 하위 페이지(SnowballDetailClient 등)의 비동기 리다이렉트 경쟁(Race Condition)을 원천 차단하는 플래그
+let signingOutInProgress = false;
+
+export function isSigningOut(): boolean {
+  return signingOutInProgress;
+}
 
 const INVITE_REDIRECT_KEYS = [
   PENDING_INVITE_STORAGE_KEY,
   LEGACY_INVITE_STORAGE_KEY,
   OAUTH_ONE_TIME_INVITE_KEY,
+  OAUTH_ONE_TIME_INVITE_TS_KEY,
   "pending_slug",
+  "redirect_slug",
   "last_visited_slug",
+  "target_slug",
+  "friend_slug",
+  "invite_slug",
 ] as const;
 
 const ALL_INVITE_STORAGE_KEYS = [
@@ -281,13 +296,82 @@ const ALL_INVITE_STORAGE_KEYS = [
   INVITED_BY_NICKNAME_KEY,
   "referrer",
   "invited_by",
+  "referrer_slug",
 ] as const;
 
-function expireCookieKeys(keys: readonly string[]): void {
+// 패턴 스윕 시 절대 건드리면 안 되는 안전한 키 판별 (무신사 팝업 기록, 편지 카운트, Supabase 세션 키 등 보존)
+function isProtectedStorageKey(key: string): boolean {
+  if (!key) return true;
+  if (
+    key === "musinsa_popup_shown" ||
+    key.startsWith("musinsa_popup_shown_") ||
+    key.startsWith("last_seen_letter_count_") ||
+    key === "santa_reported_letter_ids" ||
+    key === "santa_page_view_logged_v1" ||
+    key === GLOBAL_TOAST_KEY ||
+    key === "santa_admin_authenticated_v2" ||
+    key === LAST_AUTH_USER_ID_KEY ||
+    key === LEGACY_LAST_AUTH_USER_ID_KEY ||
+    key === SELF_HEAL_VERSION_KEY ||
+    key.startsWith("sb-") ||
+    key.startsWith("supabase.")
+  ) {
+    return true;
+  }
+  return false;
+}
+
+const LEGACY_SLUG_KEY_PATTERN = /(slug|invite|referrer|invited_by|redirect)/i;
+
+function sweepStorageByPattern(
+  storage: Storage,
+  includeReferrerNickname: boolean
+): void {
+  try {
+    const keysToDelete: string[] = [];
+    for (let i = 0; i < storage.length; i++) {
+      const k = storage.key(i);
+      if (!k || isProtectedStorageKey(k)) continue;
+      if (!includeReferrerNickname && k === INVITED_BY_NICKNAME_KEY) continue;
+      if (LEGACY_SLUG_KEY_PATTERN.test(k)) {
+        keysToDelete.push(k);
+      }
+    }
+    for (const k of keysToDelete) {
+      storage.removeItem(k);
+    }
+  } catch {
+    // 스토리지 접근 제한 환경 무시
+  }
+}
+
+function expireCookieKeys(
+  explicitKeys: readonly string[],
+  sweepPattern = false
+): void {
   if (typeof document === "undefined") return;
-  for (const key of keys) {
+  const targets = new Set<string>(explicitKeys);
+  if (sweepPattern) {
     try {
-      document.cookie = `${key}=; path=/; max-age=0; SameSite=Lax`;
+      const rawCookies = document.cookie ? document.cookie.split(";") : [];
+      for (const part of rawCookies) {
+        const eqIdx = part.indexOf("=");
+        const name = (eqIdx >= 0 ? part.slice(0, eqIdx) : part).trim();
+        if (
+          name &&
+          !isProtectedStorageKey(name) &&
+          LEGACY_SLUG_KEY_PATTERN.test(name)
+        ) {
+          targets.add(name);
+        }
+      }
+    } catch {
+      // 무시
+    }
+  }
+  for (const key of Array.from(targets)) {
+    try {
+      document.cookie = `${key}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
     } catch {
       // 쿠키 접근 제한 환경 무시
     }
@@ -295,7 +379,7 @@ function expireCookieKeys(keys: readonly string[]): void {
 }
 
 export function notifyAuthChanged(): void {
-  if (typeof window !== "undefined") {
+  if (typeof window !== "undefined" && !signingOutInProgress) {
     window.dispatchEvent(new Event("santa-auth-changed"));
   }
 }
@@ -319,7 +403,8 @@ export function consumeFlashToast(): string | null {
 }
 
 /**
- * OAuth 로그인 버튼 클릭 직전에만 1회용으로 친구 슬러그를 임시 보관합니다.
+ * OAuth 로그인 버튼 클릭 직전에만 동일 탭 sessionStorage에 1회용(최대 5분 유효)으로 친구 슬러그를 임시 보관합니다.
+ * localStorage에는 절대 저장하지 않아 탭 종료나 계정 전환 시 남지 않도록 차단합니다.
  */
 export function saveOneTimeOAuthInviteSlug(slug: string): void {
   if (typeof window === "undefined") return;
@@ -327,7 +412,10 @@ export function saveOneTimeOAuthInviteSlug(slug: string): void {
   if (!trimmed) return;
   try {
     window.sessionStorage.setItem(OAUTH_ONE_TIME_INVITE_KEY, trimmed);
-    window.localStorage.setItem(PENDING_INVITE_STORAGE_KEY, trimmed);
+    window.sessionStorage.setItem(
+      OAUTH_ONE_TIME_INVITE_TS_KEY,
+      String(Date.now())
+    );
   } catch {
     // 스토리지 접근 제한 환경 무시
   }
@@ -340,10 +428,14 @@ export function consumeOneTimeOAuthInviteSlug(): string | null {
   if (typeof window === "undefined") return null;
   let found: string | null = null;
   try {
-    found =
-      window.sessionStorage.getItem(OAUTH_ONE_TIME_INVITE_KEY) ||
-      window.localStorage.getItem(PENDING_INVITE_STORAGE_KEY) ||
-      window.localStorage.getItem(LEGACY_INVITE_STORAGE_KEY);
+    const rawSlug = window.sessionStorage.getItem(OAUTH_ONE_TIME_INVITE_KEY);
+    const rawTs = Number(
+      window.sessionStorage.getItem(OAUTH_ONE_TIME_INVITE_TS_KEY) || "0"
+    );
+    const isFresh = rawTs > 0 && Date.now() - rawTs < 5 * 60 * 1000;
+    if (rawSlug && isFresh) {
+      found = rawSlug;
+    }
   } catch {
     found = null;
   }
@@ -358,10 +450,7 @@ export function savePendingInviteSlug(slug: string): void {
 export function getPendingInviteSlug(): string | null {
   if (typeof window === "undefined") return null;
   try {
-    const val =
-      window.sessionStorage.getItem(OAUTH_ONE_TIME_INVITE_KEY) ||
-      window.localStorage.getItem(PENDING_INVITE_STORAGE_KEY) ||
-      window.localStorage.getItem(LEGACY_INVITE_STORAGE_KEY);
+    const val = window.sessionStorage.getItem(OAUTH_ONE_TIME_INVITE_KEY);
     return val && val.trim() !== "" ? val.trim() : null;
   } catch {
     return null;
@@ -385,12 +474,14 @@ export function clearPendingInviteSlug(): void {
       // 무시
     }
   }
-  expireCookieKeys(INVITE_REDIRECT_KEYS);
+  sweepStorageByPattern(window.localStorage, false);
+  sweepStorageByPattern(window.sessionStorage, false);
+  expireCookieKeys(INVITE_REDIRECT_KEYS, false);
 }
 
 /**
- * 기본 루트(/) 접속, 로그아웃, 계정 전환 시 모든 초대/타겟/추천인 임시 스토리지 및 쿠키를 완전히 초기화합니다.
- * (무신사 팝업 노출 기록 musinsa_popup_shown_${userId} 등은 절대 건드리지 않고 유지합니다.)
+ * 기본 루트(/) 접속, 로그아웃, 계정 전환 시 모든 초대/타겟/추천인/레거시 슬러그 스토리지 및 쿠키를 완전히 초기화합니다.
+ * (무신사 팝업 노출 기록 musinsa_popup_shown_${userId}는 안전하게 보존합니다.)
  */
 export function clearAllInviteStorage(): void {
   if (typeof window === "undefined") return;
@@ -406,7 +497,45 @@ export function clearAllInviteStorage(): void {
       // 무시
     }
   }
-  expireCookieKeys(ALL_INVITE_STORAGE_KEYS);
+  sweepStorageByPattern(window.localStorage, true);
+  sweepStorageByPattern(window.sessionStorage, true);
+  expireCookieKeys(ALL_INVITE_STORAGE_KEYS, true);
+}
+
+/**
+ * 기존에 브라우저 스토리지가 꼬여있던 유저들을 위한 자체 치유(Self-Healing) 클린업:
+ * 1) 배포 후 최초 1회(santa_slug_self_heal_v2) 모든 레거시 슬러그/초대 찌꺼기 일괄 청소
+ * 2) 매 앱 로드마다 localStorage에 남아있을 수 있는 모든 리다이렉트용 슬러그 키 상시 제거
+ */
+let bootCleanupExecuted = false;
+export function runSelfHealingSlugCleanup(pathname?: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    const healed = window.localStorage.getItem(SELF_HEAL_VERSION_KEY);
+    if (healed !== "done") {
+      clearAllInviteStorage();
+      window.localStorage.setItem(SELF_HEAL_VERSION_KEY, "done");
+      bootCleanupExecuted = true;
+      return;
+    }
+
+    if (!bootCleanupExecuted) {
+      bootCleanupExecuted = true;
+      // localStorage에는 리다이렉트 슬러그를 절대 보관하지 않으므로 발견 즉시 제거
+      for (const key of INVITE_REDIRECT_KEYS) {
+        window.localStorage.removeItem(key);
+      }
+      sweepStorageByPattern(window.localStorage, false);
+
+      // OAuth 콜백 진행 중이 아니고 URL에 ?sb=가 없으면 sessionStorage 리다이렉트 키도 즉시 제거
+      const hasSbParam = new URLSearchParams(window.location.search).has("sb");
+      if (!hasSbParam && pathname !== "/auth/callback") {
+        clearPendingInviteSlug();
+      }
+    }
+  } catch {
+    // 무시
+  }
 }
 
 /**
@@ -445,19 +574,36 @@ export function clearInvitedByNickname(): void {
   }
 }
 
+/**
+ * 공통 로그아웃 핸들러:
+ * - 하위 컴포넌트의 비동기 리다이렉트 경쟁(/?sb=계정1 납치)을 즉시 차단하고,
+ * - 모든 초대/방문/리다이렉트 관련 localStorage, sessionStorage, cookie를 완전히 삭제한 뒤,
+ * - Supabase 로그아웃 완료 즉시 window.location.replace('/')로 브라우저 상태를 완전히 초기화하며 순수 기본 홈(/)으로 강제 이동합니다.
+ */
 export async function signOutAll(): Promise<void> {
+  signingOutInProgress = true;
   if (typeof window !== "undefined") {
     clearAllInviteStorage();
     try {
       window.localStorage.removeItem(LAST_AUTH_USER_ID_KEY);
+      window.localStorage.removeItem(LEGACY_LAST_AUTH_USER_ID_KEY);
       window.localStorage.removeItem("santa_mock_auth_session");
       window.localStorage.removeItem("santa_quick_user_slots_v1");
     } catch {
       // 무시
     }
   }
-  await supabase.auth.signOut();
-  notifyAuthChanged();
+
+  try {
+    await supabase.auth.signOut();
+  } catch {
+    // 네트워크 예외가 발생하더라도 로컬 정리 및 하드 리다이렉트는 보장
+  }
+
+  if (typeof window !== "undefined") {
+    clearAllInviteStorage();
+    window.location.replace("/");
+  }
 }
 
 /* ============================================================================
@@ -473,6 +619,10 @@ export interface AuthSnowballState {
 }
 
 export async function getCurrentAuthAndSnowball(): Promise<AuthSnowballState> {
+  if (typeof window !== "undefined") {
+    runSelfHealingSlugCleanup(window.location.pathname);
+  }
+
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -480,14 +630,17 @@ export async function getCurrentAuthAndSnowball(): Promise<AuthSnowballState> {
   if (session?.user) {
     const user = session.user;
 
-    // 브라우저에서 로그인된 계정(user.id)이 이전 계정과 달라진 경우(계정 전환) 이전 계정의 초대/타겟 슬러그 흔적 즉시 초기화
+    // 로그인 세션의 user.id가 직전 로그인 유저(last_auth_user_id)와 달라졌을 때 모든 레거시 슬러그/초대 찌꺼기 자동 초기화
     if (typeof window !== "undefined") {
       try {
-        const prevUserId = window.localStorage.getItem(LAST_AUTH_USER_ID_KEY);
+        const prevUserId =
+          window.localStorage.getItem(LAST_AUTH_USER_ID_KEY) ||
+          window.localStorage.getItem(LEGACY_LAST_AUTH_USER_ID_KEY);
         if (prevUserId && prevUserId !== user.id) {
           clearAllInviteStorage();
         }
         window.localStorage.setItem(LAST_AUTH_USER_ID_KEY, user.id);
+        window.localStorage.removeItem(LEGACY_LAST_AUTH_USER_ID_KEY);
       } catch {
         // 무시
       }
@@ -515,12 +668,15 @@ export async function getCurrentAuthAndSnowball(): Promise<AuthSnowballState> {
     };
   }
 
-  // 기존 로그인 세션이 만료되었거나 로그아웃된 상태로 전환된 경우 초대/타겟 스토리지 초기화
+  // 기존 로그인 세션이 종료/만료되어 비로그인 상태가 된 경우 직전 유저의 모든 슬러그/초대 흔적 즉시 제거
   if (typeof window !== "undefined") {
     try {
-      const prevUserId = window.localStorage.getItem(LAST_AUTH_USER_ID_KEY);
+      const prevUserId =
+        window.localStorage.getItem(LAST_AUTH_USER_ID_KEY) ||
+        window.localStorage.getItem(LEGACY_LAST_AUTH_USER_ID_KEY);
       if (prevUserId) {
         window.localStorage.removeItem(LAST_AUTH_USER_ID_KEY);
+        window.localStorage.removeItem(LEGACY_LAST_AUTH_USER_ID_KEY);
         clearAllInviteStorage();
       }
     } catch {
@@ -541,8 +697,10 @@ export async function signInWithGoogle(inviteSlug?: string | null) {
   const cleanInviteSlug = inviteSlug?.trim() || null;
   if (typeof window !== "undefined") {
     if (cleanInviteSlug) {
+      clearPendingInviteSlug();
       saveOneTimeOAuthInviteSlug(cleanInviteSlug);
     } else {
+      // 기본 홈(/) -> /login에서 시작하는 일반 로그인 시 모든 초대/타겟 슬러그 스토리지를 완전히 비운 뒤 OAuth 시작
       clearAllInviteStorage();
     }
   }

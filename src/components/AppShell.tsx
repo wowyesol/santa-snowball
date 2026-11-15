@@ -9,8 +9,11 @@ import {
   consumeFlashToast,
   getCurrentAuthAndSnowball,
   getSnowballLevelInfo,
+  isSigningOut,
   logPageViewOncePerSession,
+  runSelfHealingSlugCleanup,
   signOutAll,
+  supabase,
 } from "@/lib/supabase";
 
 interface AppShellProps {
@@ -84,11 +87,14 @@ export default function AppShell({
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const syncHeader = useCallback(async () => {
+    if (isSigningOut()) return;
     if (typeof window !== "undefined") {
+      runSelfHealingSlugCleanup(pathname);
       const params = new URLSearchParams(window.location.search);
       setIsOwnLinkMode(params.get("mode") === "own-link");
     }
     const current = await getCurrentAuthAndSnowball();
+    if (isSigningOut()) return;
     setAuth(current);
     // 메인 사이트 최초 진입 시 세션당 1회 'page_view' 기록 (/admin 제외, sessionStorage 중복 방지)
     if (pathname !== "/admin") {
@@ -374,7 +380,13 @@ export default function AppShell({
 
     // 이미 로그인된 유저가 현재 URL에 명시적인 ?sb=[targetSlug] 파라미터를 달고 접속한 경우에만 1회 이동 처리 (스토리지 영구 저장 금지)
     async function enforceInviteRedirect() {
-      if (typeof window === "undefined" || pathname === "/" || pathname === "/login") {
+      if (
+        typeof window === "undefined" ||
+        isSigningOut() ||
+        pathname === "/" ||
+        pathname === "/login" ||
+        pathname === "/auth/callback"
+      ) {
         return;
       }
       const params = new URLSearchParams(window.location.search);
@@ -382,6 +394,7 @@ export default function AppShell({
       if (!sbFromUrl) return;
 
       const current = await getCurrentAuthAndSnowball();
+      if (isSigningOut()) return;
       if (current.isAuthenticated && current.snowball) {
         clearPendingInviteSlug();
         if (sbFromUrl !== current.snowball.slug) {
@@ -403,13 +416,22 @@ export default function AppShell({
     };
     checkToast();
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      if (!isSigningOut()) {
+        syncHeader();
+      }
+    });
+
     window.addEventListener("santa-auth-changed", syncHeader);
     window.addEventListener("santa-toast", checkToast);
     return () => {
+      subscription.unsubscribe();
       window.removeEventListener("santa-auth-changed", syncHeader);
       window.removeEventListener("santa-toast", checkToast);
     };
-  }, [syncHeader, router]);
+  }, [syncHeader, router, pathname]);
 
   const homeHref = auth?.snowball
     ? `/snowball/${encodeURIComponent(auth.snowball.slug)}`
@@ -594,7 +616,6 @@ export default function AppShell({
                   type="button"
                   onClick={async () => {
                     await signOutAll();
-                    router.push("/");
                   }}
                   className="hover:underline text-[#2C2F63]/80"
                 >

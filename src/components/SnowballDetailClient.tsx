@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useCallback, useEffect, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -20,6 +20,7 @@ import {
   Letter,
   Snowball,
   TicketSummary,
+  clearAllInviteStorage,
   clearInvitedByNickname,
   clearPendingInviteSlug,
   computeAndSyncSnowballLevel,
@@ -31,6 +32,7 @@ import {
   getTicketSummary,
   getVisibleLettersBySnowballId,
   isCampaignOpenDateReached,
+  isSigningOut,
   logEventAsync,
   saveInvitedByNickname,
   sendGiftLetter,
@@ -56,6 +58,7 @@ function SnowballDetailContent() {
   const [authState, setAuthState] = useState<AuthSnowballState | null>(null);
   const [letters, setLetters] = useState<Letter[]>([]);
   const [ticketSummary, setTicketSummary] = useState<TicketSummary | null>(null);
+  const wasAuthenticatedRef = useRef<boolean>(false);
 
   // S04 상태: 공유 복사 토스트, 흔들기 애니메이션, P04 모달
   const [copiedToast, setCopiedToast] = useState<string | null>(null);
@@ -84,11 +87,13 @@ function SnowballDetailContent() {
   };
 
   const loadData = useCallback(async () => {
+    if (isSigningOut()) return;
     setLoading(true);
     const [sbData, currentAuth] = await Promise.all([
       getSnowballBySlug(slug),
       getCurrentAuthAndSnowball(),
     ]);
+    if (isSigningOut()) return;
 
     // 1) 존재하지 않거나 삭제된 스노우볼 주소로 접속 시: 에러 화면 없이 토스트 알림 후 S01(/)로 이동
     if (!sbData) {
@@ -97,15 +102,27 @@ function SnowballDetailContent() {
       return;
     }
 
-    // 2) 비로그인 상태(또는 아직 내 스노우볼을 만들지 않은 상태)로 /snowball/[slug]에 직접 접속한 경우:
-    //    영구 스토리지에 슬러그를 남기지 않고 URL 쿼리(?sb=)로만 전달해 S01 친구 초대 화면으로 이동
+    // 2) 비로그인 상태(또는 아직 내 스노우볼을 만들지 않은 상태)인 경우:
     if (!currentAuth.isAuthenticated || !currentAuth.snowball) {
+      // 이 화면에서 이미 로그인되어 있다가 로그아웃된 경우에는 절대 /?sb=[이전계정_slug]로 보내지 않고 순수 기본 홈(/)으로 강제 초기화!
+      if (wasAuthenticatedRef.current) {
+        clearAllInviteStorage();
+        if (typeof window !== "undefined") {
+          window.location.replace("/");
+        } else {
+          router.replace("/");
+        }
+        return;
+      }
+
       clearPendingInviteSlug();
       router.replace(
         `/?sb=${encodeURIComponent(sbData.slug)}&utm_source=friend`
       );
       return;
     }
+
+    wasAuthenticatedRef.current = true;
 
     // 로그인 완료 상태에서는 리다이렉트용 임시 초대 슬러그를 항상 비워 추후 기본 루트(/) 접속 시 납치 현상 원천 차단
     clearPendingInviteSlug();

@@ -119,11 +119,18 @@ export default function LandingView() {
   }, [sbParam, router]);
 
   const handleGoToS02 = () => {
-    // 오직 현재 친구 초대 링크(?sb=...) 화면에서 직접 로그인 시작 버튼을 눌렀을 때만 friend_slug 전달
-    if (sbParam && friendSnowball) {
+    const liveUrlSb =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("sb")?.trim() || null
+        : sbParam;
+
+    // 오직 현재 URL이 명시적인 친구 초대 링크(?sb=...)일 때만 friend_slug 전달
+    if (liveUrlSb && friendSnowball) {
+      clearPendingInviteSlug();
       saveInvitedByNickname(friendSnowball.nickname);
       router.push(`/login?sb=${encodeURIComponent(friendSnowball.slug)}`);
     } else {
+      // 기본 홈(/)에서 로그인 시작 시 모든 초대/타겟 슬러그 스토리지를 한 번 더 완전히 비운 뒤 진입
       clearAllInviteStorage();
       router.push("/login");
     }
