@@ -7,7 +7,10 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import SnowballGraphic from "@/components/SnowballGraphic";
 import GeminiHighlightBanner from "@/components/GeminiHighlightBanner";
-import MusinsaPopup from "@/components/MusinsaPopup";
+import MusinsaPopup, {
+  hasShownMusinsaPopup,
+  markMusinsaPopupShown,
+} from "@/components/MusinsaPopup";
 import InAppBrowserGuard, {
   detectInAppBrowser,
 } from "@/components/InAppBrowserGuard";
@@ -149,12 +152,16 @@ function SnowballDetailContent() {
       setMyExistingLetter(existing);
     }
 
-    // [팝업 순서 제어] 외부(일반) 브라우저에서 구글 로그인을 완료하고 스노우볼 화면에 진입했을 때 무신사 팝업 노출
+    // [팝업 순서 제어] 일반(외부) 브라우저에서 로그인 완료 후 스노우볼 화면 최초 진입 시 딱 1회만 무신사 팝업 노출
     if (typeof window !== "undefined") {
       const inAppInfo = detectInAppBrowser(window.navigator.userAgent);
-      const alreadySeen =
-        window.sessionStorage.getItem("santa_musinsa_popup_seen") === "1";
-      if (!inAppInfo.isInApp && !alreadySeen) {
+      const effectiveUid =
+        currentAuth.userId || mySb.user_id || mySb.id || null;
+      if (
+        !inAppInfo.isInApp &&
+        effectiveUid &&
+        !hasShownMusinsaPopup(effectiveUid)
+      ) {
         setIsMusinsaPopupOpen(true);
       }
     }
@@ -232,9 +239,9 @@ function SnowballDetailContent() {
   }, []);
 
   const handleCloseMusinsaPopup = () => {
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem("santa_musinsa_popup_seen", "1");
-    }
+    const effectiveUid =
+      authState?.userId || mySnowball?.user_id || mySnowball?.id || null;
+    markMusinsaPopupShown(effectiveUid);
     setIsMusinsaPopupOpen(false);
   };
 
@@ -320,7 +327,7 @@ function SnowballDetailContent() {
     : "opacity-100 transition-opacity duration-500";
 
   return (
-    <AppShell>
+    <AppShell useStageBackground>
       {/* 인앱 브라우저 감지 시 외부 브라우저 안내 최우선 노출 */}
       <InAppBrowserGuard />
 
@@ -330,40 +337,51 @@ function SnowballDetailContent() {
         </div>
       )}
 
-      <div className="flex flex-col px-5 pt-8 pb-12 break-keep">
-        {isOwner && !isOwnLinkView ? (
-          /* ================================================================
-              [S04] 내 스노우볼 홈 (/snowball/[내slug])
-             ================================================================ */
-          <>
-            {/* 상단 타이틀 및 제미나이 인증 상태 배지 (요정 등장 0~3.8초 동안 부드럽게 일시 숨김) */}
-            <div
-              className={`w-full flex flex-col items-center justify-center text-center ${topUiVisibilityClass}`}
-            >
-              <h1 className="tracking-tight text-center">
-                <span className="block text-3xl sm:text-4xl font-black text-white leading-tight break-keep">
-                  {targetSnowball.nickname}의
-                </span>
-                <span className="block text-2xl font-extrabold text-white leading-tight mt-1">
-                  스노우볼
-                </span>
-              </h1>
+      <div className="flex flex-col w-full break-keep">
+        {/* ================================================================
+            공통 메인 비주얼 Stage (S04 내 스노우볼 & S05 친구 스노우볼 동일 좌표계)
+            - 원본 배경(bg-night-snow.png, 941:1672 ≈ 9:16) 비율을 유지하는 기준 래퍼 내부에서
+              상단 텍스트 줄 수나 배지 유무와 완전히 독립적으로 스노우볼을 눈언덕 바닥(bottom 4.8%)에 고정 착지
+            - 요술봉 요정(FairyOverlay)도 스노우볼 컨테이너 바로 위 상대 좌표에 종속시켜 모든 기기에서 스노우볼 정수리 위에 고정
+           ================================================================ */}
+        <div className="relative w-full aspect-[941/1672] select-none">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/bg-night-snow.png?v=2"
+            alt=""
+            aria-hidden="true"
+            className="w-full h-auto block pointer-events-none select-none"
+          />
 
-              {/* ① 제미나이 인증 상태 배지 */}
+          {/* 상단 타이틀 · 배지 · 편지 수 오버레이 (스노우볼 위치를 밀어내지 않도록 독립 배치) */}
+          <div
+            className={`absolute inset-x-0 top-[4.5%] z-20 px-5 flex flex-col items-center text-center ${topUiVisibilityClass}`}
+          >
+            <h1 className="tracking-tight text-center">
+              <span className="block text-3xl sm:text-4xl font-black text-white leading-tight break-keep">
+                {targetSnowball.nickname}의
+              </span>
+              <span className="block text-2xl font-extrabold text-white leading-tight mt-1">
+                스노우볼
+              </span>
+            </h1>
+
+            {isOwner && !isOwnLinkView ? (
               <Link
                 href="/verify"
-                className={`mt-4 inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-extrabold leading-none text-center border transition-all active:scale-95 ${statusBadgeColorClass}`}
+                className={`mt-3.5 inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-extrabold leading-none text-center border transition-all active:scale-95 ${statusBadgeColorClass}`}
               >
                 <span className="inline-flex items-center justify-center leading-none">
                   {statusBadgeText}
                 </span>
               </Link>
-            </div>
+            ) : isOwnLinkView ? (
+              <span className="mt-3.5 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#2C2F63] border border-white/20 text-white text-xs font-extrabold leading-none">
+                내 스노우볼
+              </span>
+            ) : null}
 
-            {/* 받은 편지 N개 (좌측) & 현재 스노우볼 레벨 Lv.n (우측) - 요정 등장 0~3.8초 동안 일시 숨김 */}
-            <div
-              className={`mt-3.5 sm:mt-4 w-full flex items-center justify-between gap-2 px-1 ${topUiVisibilityClass}`}
-            >
+            <div className="mt-3.5 w-full flex items-center justify-between gap-2 px-1">
               <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
                 받은 편지 {letters.length}개
               </span>
@@ -371,289 +389,249 @@ function SnowballDetailContent() {
                 {levelInfo.stageLabel}
               </span>
             </div>
+          </div>
 
-            {/* ② 스노우볼 이미지 영역 + 요술봉 요정 오버레이 */}
-            <div className="relative mt-8 sm:mt-9 mb-2 flex justify-center">
-              <FairyOverlay
-                active={isFairyActive}
-                onWandSparkle={handleFairyWandSparkle}
-                onHideTopUiChange={setIsTopUiHidden}
-                onComplete={() => setIsFairyActive(false)}
-              />
-              <SnowballGraphic
-                level={targetSnowball.level}
-                letters={letters}
-                isShaking={isShaking}
-              />
-            </div>
+          {/* 스노우볼 + 요술봉 요정 통합 앵커 (눈언덕 바닥 bottom 4.8% 자석 착지) */}
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-[4.8%] z-10 w-[92%] pointer-events-none">
+            <FairyOverlay
+              active={isFairyActive}
+              onWandSparkle={handleFairyWandSparkle}
+              onHideTopUiChange={setIsTopUiHidden}
+              onComplete={() => setIsFairyActive(false)}
+            />
+            <SnowballGraphic
+              level={targetSnowball.level}
+              letters={letters}
+              isShaking={isShaking}
+              inStage
+            />
+          </div>
+        </div>
 
-            {/* ③ 스노우볼 이미지와 [우편함 열어보기] 버튼 */}
-            <button
-              type="button"
-              onClick={handleShakeSnowball}
-              className="mt-2 w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] active:scale-[0.99] text-white text-sm font-extrabold border border-white/15 shadow-[0_6px_16px_rgba(44,47,99,0.28)] transition-all mb-4"
-            >
-              우편함 열어보기
-            </button>
-
-            {/* 내 스노우볼 공유 유도 카드 (단일 [스노우볼 공유하기] 버튼) */}
-            <div className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] text-left mb-3 shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
-              <h2 className="text-xs font-extrabold text-[#2C2F63] mb-1">
-                친구와 편지를 나눠봐요!
-              </h2>
-              <p className="text-[11px] font-semibold text-[#2C2F63]/75 mb-3">
-                친구들이 내 스노우볼에 편지를 남기면 응모권이 쌓여요
-              </p>
+        {/* ================================================================
+            눈언덕 아래 단색(#FCEED8) 연장 영역에 이어지는 하단 액션 영역
+           ================================================================ */}
+        <div className="relative z-20 flex flex-col px-5 -mt-6 pb-12">
+          {isOwner && !isOwnLinkView ? (
+            /* [S04] 내 스노우볼 홈 (/snowball/[내slug]) */
+            <>
+              {/* ③ [우편함 열어보기] 버튼 */}
               <button
                 type="button"
-                onClick={handleCopyMyLink}
-                className="w-full py-3 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-xs font-extrabold transition-colors shadow-xs"
+                onClick={handleShakeSnowball}
+                className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] active:scale-[0.99] text-white text-sm font-extrabold border border-white/15 shadow-[0_6px_16px_rgba(44,47,99,0.28)] transition-all mb-4"
               >
-                스노우볼 공유하기
+                우편함 열어보기
               </button>
-            </div>
 
-            {/* 하단 액션 영역 */}
-            <div className="w-full space-y-2.5">
-              {/* 1) 내 응모권 N장 (사용 X장 / 잔여 Y장) 요약 카드 */}
-              <div className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-bold text-[#2C2F63]/80">
-                    내 응모권
-                  </span>
-                  <span className="text-xl font-black text-[#2C2F63]">
-                    {ticketSummary?.totalTickets ?? targetSnowball.ticket_count}장
-                  </span>
-                </div>
-                <p className="text-[11px] font-semibold text-[#2C2F63]/75 text-left">
-                  사용 {ticketSummary?.allocatedTickets ?? 0}장 / 잔여{" "}
-                  {ticketSummary?.availableTickets ?? targetSnowball.ticket_count}장
-                </p>
-              </div>
-
-              {/* 2) [강조 배너] Gemini 가입 인증 시 응모권 +100장 · 레벨 +1 */}
-              {!isGeminiApproved && (
-                <GeminiHighlightBanner
-                  snowball={targetSnowball}
-                  subtitle="스노우볼 업그레이드 해보세요 · 레벨 +1"
-                />
-              )}
-
-              {/* 3) [응모하러 가기] 남색(#2C2F63) 버튼 (S06 이동) */}
-              <Link
-                href="/raffle"
-                className="block w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold text-center shadow-[0_6px_16px_rgba(44,47,99,0.28)] transition-colors"
-              >
-                응모하러 가기
-              </Link>
-
-              {/* 4) 추천 현황 보기 -> 하단 눈밭(#FAF0DC) 위에서도 선명한 남색(#2C2F63) 링크 */}
-              <div className="pt-2 text-center">
-                <Link
-                  href="/referral"
-                  className="inline-block px-4 py-1.5 rounded-full bg-white/85 border border-[#2C2F63]/20 text-xs font-extrabold text-[#2C2F63] hover:bg-white shadow-2xs transition-colors"
-                >
-                  추천 현황 보기 →
-                </Link>
-              </div>
-            </div>
-          </>
-        ) : (
-          /* ================================================================
-              [S05] 친구 스노우볼 (/snowball/[친구slug] 또는 own-link)
-             ================================================================ */
-          <>
-            <div
-              className={`w-full flex flex-col items-center justify-center text-center ${topUiVisibilityClass}`}
-            >
-              <h1 className="tracking-tight text-center">
-                <span className="block text-3xl sm:text-4xl font-black text-white leading-tight break-keep">
-                  {targetSnowball.nickname}의
-                </span>
-                <span className="block text-2xl font-extrabold text-white leading-tight mt-1">
-                  스노우볼
-                </span>
-              </h1>
-
-              {isOwnLinkView ? (
-                <span className="mt-4 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#2C2F63] border border-white/20 text-white text-xs font-extrabold leading-none">
-                  내 스노우볼
-                </span>
-              ) : (
-                /* S04의 제미나이 인증 배지(mt-4 + 높이 26px)와 동일한 기준점 여백을 확보해 친구 스노우볼도 눈언덕 바닥에 100% 동일하게 착지 */
-                <div className="mt-4 h-[26px]" aria-hidden="true" />
-              )}
-            </div>
-
-            {/* 받은 편지 N개 & Lv.n 줄 (요정 등장 0~3.8초 동안 일시 숨김) */}
-            <div
-              className={`mt-3.5 sm:mt-4 w-full flex items-center justify-between gap-2 px-1 ${topUiVisibilityClass}`}
-            >
-              <span className="text-base sm:text-lg font-extrabold text-white drop-shadow-[0_1px_2px_rgba(26,30,67,0.45)] leading-none">
-                받은 편지 {letters.length}개
-              </span>
-              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#2C2F63]/80 border border-white/25 text-sm sm:text-base font-extrabold text-white leading-none shadow-2xs">
-                {levelInfo.stageLabel}
-              </span>
-            </div>
-
-            {/* 친구의 현재 레벨(0/1/3)에 맞는 스노우볼 이미지 + 편지 전송 직후 등장하는 요술봉 요정 오버레이 */}
-            <div className="relative mt-8 sm:mt-9 mb-2 flex justify-center">
-              <FairyOverlay
-                active={isFairyActive}
-                onWandSparkle={handleFairyWandSparkle}
-                onHideTopUiChange={setIsTopUiHidden}
-                onComplete={() => setIsFairyActive(false)}
-              />
-              <SnowballGraphic
-                level={targetSnowball.level}
-                letters={letters}
-                isShaking={isShaking}
-              />
-            </div>
-
-            {/* 상태 1: 내 스노우볼에 내가 공유 링크로 접속한 경우 (own-link) */}
-            {isOwner ? (
-              <div className="w-full mt-4 space-y-3 text-left">
-                <div className="p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
-                  <p className="text-sm font-extrabold text-[#2C2F63] mb-1">
-                    내 스노우볼에는 편지를 넣을 수 없어요
-                  </p>
-                  <p className="text-xs font-semibold text-[#2C2F63]/75">
-                    친구에게 링크를 보내 편지를 받아보세요
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleCopyMyLink}
-                  className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold shadow-md transition-colors"
-                >
-                  내 스노우볼 공유하기
-                </button>
-              </div>
-            ) : justSent ? (
-              /* 상태 2: 방금 편지 전송 완료 (S05 · sent) */
-              <div className="w-full mt-4 space-y-2.5 text-left">
-                <div className="p-4 rounded-2xl bg-[#2C2F63] border border-white/20 text-white shadow-md">
-                  <p className="text-base font-extrabold mb-0.5">
-                    편지를 넣었어요!
-                  </p>
-                  <p className="text-xs text-white/95 font-medium">
-                    {justSentRewardMsg}
-                  </p>
-                </div>
-
-                {mySnowball && (
-                  <Link
-                    href={`/snowball/${encodeURIComponent(mySnowball.slug)}`}
-                    className="block w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold text-center shadow-md transition-colors"
-                  >
-                    내 스노우볼 보러 가기
-                  </Link>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleCopyMyLink}
-                  className="w-full py-3.5 rounded-xl bg-white hover:bg-slate-50 border border-[#2C2F63]/20 text-[#2C2F63] text-sm font-extrabold shadow-md transition-colors"
-                >
-                  내 스노우볼도 공유하기
-                </button>
-              </div>
-            ) : myExistingLetter ? (
-              /* 상태 3: 이미 이 스노우볼에 편지를 보낸 경우 (S05 · already-sent) */
-              <div className="w-full mt-4 space-y-2.5 text-left">
-                <div className="p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
-                  <p className="text-sm font-extrabold text-[#2C2F63] mb-1">
-                    이미 편지를 보냈어요
-                  </p>
-                  <p className="text-xs font-semibold text-[#2C2F63]/75">
-                    같은 스노우볼에는 1번만 보낼 수 있어요 ·{" "}
-                    {myExistingLetter.created_at
-                      ? new Date(myExistingLetter.created_at).toLocaleDateString(
-                          "ko-KR",
-                          { month: "numeric", day: "numeric" }
-                        )
-                      : "오늘"}{" "}
-                    보냄
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  disabled
-                  className="w-full py-3.5 rounded-xl bg-[#2C2F63]/45 text-white/85 text-sm font-extrabold cursor-not-allowed"
-                >
-                  이미 편지를 보냈어요
-                </button>
-
-                {mySnowball && (
-                  <Link
-                    href={`/snowball/${encodeURIComponent(mySnowball.slug)}`}
-                    className="block w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold text-center shadow-md transition-colors"
-                  >
-                    내 스노우볼 보러 가기
-                  </Link>
-                )}
-              </div>
-            ) : (
-              /* 상태 4: 편지 작성 가능 (하단 눈밭 위에서도 선명하게 보이도록 화이트 카드 & #2C2F63 대비 적용) */
-              <form
-                onSubmit={handleSendLetterSubmit}
-                className="w-full mt-3 p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 shadow-[0_8px_22px_rgba(44,47,99,0.14)] text-left text-[#2C2F63]"
-              >
-                <h2 className="text-sm font-extrabold text-[#2C2F63] mb-2">
-                  {targetSnowball.nickname}의 스노우볼에 편지 넣기
+              {/* 내 스노우볼 공유 유도 카드 (단일 [스노우볼 공유하기] 버튼) */}
+              <div className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] text-left mb-3 shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
+                <h2 className="text-xs font-extrabold text-[#2C2F63] mb-1">
+                  친구와 편지를 나눠봐요!
                 </h2>
+                <p className="text-[11px] font-semibold text-[#2C2F63]/75 mb-3">
+                  친구들이 내 스노우볼에 편지를 남기면 응모권이 쌓여요
+                </p>
+                <button
+                  type="button"
+                  onClick={handleCopyMyLink}
+                  className="w-full py-3 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-xs font-extrabold transition-colors shadow-xs"
+                >
+                  스노우볼 공유하기
+                </button>
+              </div>
 
-                {letterError && (
-                  <div className="mb-3 p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-700">
-                    ⚠️ {letterError}
+              {/* 하단 액션 영역 */}
+              <div className="w-full space-y-2.5">
+                {/* 1) 내 응모권 N장 (사용 X장 / 잔여 Y장) 요약 카드 */}
+                <div className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-[#2C2F63]/80">
+                      내 응모권
+                    </span>
+                    <span className="text-xl font-black text-[#2C2F63]">
+                      {ticketSummary?.totalTickets ?? targetSnowball.ticket_count}장
+                    </span>
                   </div>
-                )}
-
-                <label className="block text-[11px] font-bold text-[#2C2F63]/80 mb-1.5">
-                  메시지
-                </label>
-
-                <textarea
-                  rows={4}
-                  minLength={15}
-                  maxLength={200}
-                  value={letterContent}
-                  onChange={(e) =>
-                    setLetterContent(e.target.value.slice(0, 200))
-                  }
-                  placeholder={`${targetSnowball.nickname}아 메리 크리스마스! 시험 끝나면 같이 맛있는 거 먹으러 가자! (최소 15자)`}
-                  required
-                  className="w-full p-3.5 rounded-2xl bg-[#F8F9FE] border border-[#2C2F63]/20 text-xs font-semibold text-[#2C2F63] placeholder:text-[#2C2F63]/45 focus:outline-none focus:ring-2 focus:ring-[#2C2F63] shadow-inner resize-none"
-                />
-
-                <div className="mt-1.5 mb-3 flex flex-wrap items-center justify-between gap-1 text-[10px] font-bold text-[#2C2F63]/75 break-keep">
-                  <span className="leading-snug">
-                    12월 1일에 {targetSnowball.nickname}가 열어볼 수 있어요 · 보낸 사람 닉네임은 공개돼요
-                  </span>
-                  <span className="font-mono font-extrabold text-[#2C2F63] shrink-0">
-                    {letterContent.trim().length} / 200자 (최소 15자)
-                  </span>
+                  <p className="text-[11px] font-semibold text-[#2C2F63]/75 text-left">
+                    사용 {ticketSummary?.allocatedTickets ?? 0}장 / 잔여{" "}
+                    {ticketSummary?.availableTickets ?? targetSnowball.ticket_count}장
+                  </p>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={sendingLetter || letterContent.trim().length < 15}
-                  className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] disabled:bg-[#2C2F63]/40 disabled:text-white/75 text-white text-sm font-extrabold shadow-md transition-all"
-                >
-                  {sendingLetter ? "편지 넣는 중..." : "편지 넣기"}
-                </button>
+                {/* 2) [강조 배너] Gemini 가입 인증 시 응모권 +100장 · 레벨 +1 */}
+                {!isGeminiApproved && (
+                  <GeminiHighlightBanner
+                    snowball={targetSnowball}
+                    subtitle="스노우볼 업그레이드 해보세요 · 레벨 +1"
+                  />
+                )}
 
-                <p className="mt-2 text-center text-[11px] text-[#2C2F63] font-extrabold">
-                  보내면 나도 응모권 +1 · {targetSnowball.nickname}님도 +1
-                </p>
-              </form>
-            )}
-          </>
-        )}
+                {/* 3) [응모하러 가기] 남색(#2C2F63) 버튼 (S06 이동) */}
+                <Link
+                  href="/raffle"
+                  className="block w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold text-center shadow-[0_6px_16px_rgba(44,47,99,0.28)] transition-colors"
+                >
+                  응모하러 가기
+                </Link>
+
+                {/* 4) 추천 현황 보기 -> 하단 눈밭(#FAF0DC) 위에서도 선명한 남색(#2C2F63) 링크 */}
+                <div className="pt-2 text-center">
+                  <Link
+                    href="/referral"
+                    className="inline-block px-4 py-1.5 rounded-full bg-white/85 border border-[#2C2F63]/20 text-xs font-extrabold text-[#2C2F63] hover:bg-white shadow-2xs transition-colors"
+                  >
+                    추천 현황 보기 →
+                  </Link>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* [S05] 친구 스노우볼 (/snowball/[친구slug] 또는 own-link) */
+            <>
+              {/* 상태 1: 내 스노우볼에 내가 공유 링크로 접속한 경우 (own-link) */}
+              {isOwner ? (
+                <div className="w-full space-y-3 text-left">
+                  <div className="p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
+                    <p className="text-sm font-extrabold text-[#2C2F63] mb-1">
+                      내 스노우볼에는 편지를 넣을 수 없어요
+                    </p>
+                    <p className="text-xs font-semibold text-[#2C2F63]/75">
+                      친구에게 링크를 보내 편지를 받아보세요
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyMyLink}
+                    className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold shadow-md transition-colors"
+                  >
+                    내 스노우볼 공유하기
+                  </button>
+                </div>
+              ) : justSent ? (
+                /* 상태 2: 방금 편지 전송 완료 (S05 · sent) */
+                <div className="w-full space-y-2.5 text-left">
+                  <div className="p-4 rounded-2xl bg-[#2C2F63] border border-white/20 text-white shadow-md">
+                    <p className="text-base font-extrabold mb-0.5">
+                      편지를 넣었어요!
+                    </p>
+                    <p className="text-xs text-white/95 font-medium">
+                      {justSentRewardMsg}
+                    </p>
+                  </div>
+
+                  {mySnowball && (
+                    <Link
+                      href={`/snowball/${encodeURIComponent(mySnowball.slug)}`}
+                      className="block w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold text-center shadow-md transition-colors"
+                    >
+                      내 스노우볼 보러 가기
+                    </Link>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleCopyMyLink}
+                    className="w-full py-3.5 rounded-xl bg-white hover:bg-slate-50 border border-[#2C2F63]/20 text-[#2C2F63] text-sm font-extrabold shadow-md transition-colors"
+                  >
+                    내 스노우볼도 공유하기
+                  </button>
+                </div>
+              ) : myExistingLetter ? (
+                /* 상태 3: 이미 이 스노우볼에 편지를 보낸 경우 (S05 · already-sent) */
+                <div className="w-full space-y-2.5 text-left">
+                  <div className="p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 text-[#2C2F63] shadow-[0_6px_18px_rgba(44,47,99,0.12)]">
+                    <p className="text-sm font-extrabold text-[#2C2F63] mb-1">
+                      이미 편지를 보냈어요
+                    </p>
+                    <p className="text-xs font-semibold text-[#2C2F63]/75">
+                      같은 스노우볼에는 1번만 보낼 수 있어요 ·{" "}
+                      {myExistingLetter.created_at
+                        ? new Date(myExistingLetter.created_at).toLocaleDateString(
+                            "ko-KR",
+                            { month: "numeric", day: "numeric" }
+                          )
+                        : "오늘"}{" "}
+                      보냄
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full py-3.5 rounded-xl bg-[#2C2F63]/45 text-white/85 text-sm font-extrabold cursor-not-allowed"
+                  >
+                    이미 편지를 보냈어요
+                  </button>
+
+                  {mySnowball && (
+                    <Link
+                      href={`/snowball/${encodeURIComponent(mySnowball.slug)}`}
+                      className="block w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-sm font-extrabold text-center shadow-md transition-colors"
+                    >
+                      내 스노우볼 보러 가기
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                /* 상태 4: 편지 작성 가능 (하단 눈밭 위에서도 선명하게 보이도록 화이트 카드 & #2C2F63 대비 적용) */
+                <form
+                  onSubmit={handleSendLetterSubmit}
+                  className="w-full p-4 rounded-2xl bg-white/95 border border-[#2C2F63]/15 shadow-[0_8px_22px_rgba(44,47,99,0.14)] text-left text-[#2C2F63]"
+                >
+                  <h2 className="text-sm font-extrabold text-[#2C2F63] mb-2">
+                    {targetSnowball.nickname}의 스노우볼에 편지 넣기
+                  </h2>
+
+                  {letterError && (
+                    <div className="mb-3 p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-700">
+                      ⚠️ {letterError}
+                    </div>
+                  )}
+
+                  <label className="block text-[11px] font-bold text-[#2C2F63]/80 mb-1.5">
+                    메시지
+                  </label>
+
+                  <textarea
+                    rows={4}
+                    minLength={15}
+                    maxLength={200}
+                    value={letterContent}
+                    onChange={(e) =>
+                      setLetterContent(e.target.value.slice(0, 200))
+                    }
+                    placeholder={`${targetSnowball.nickname}아 메리 크리스마스! 시험 끝나면 같이 맛있는 거 먹으러 가자! (최소 15자)`}
+                    required
+                    className="w-full p-3.5 rounded-2xl bg-[#F8F9FE] border border-[#2C2F63]/20 text-xs font-semibold text-[#2C2F63] placeholder:text-[#2C2F63]/45 focus:outline-none focus:ring-2 focus:ring-[#2C2F63] shadow-inner resize-none"
+                  />
+
+                  <div className="mt-1.5 mb-3 flex flex-wrap items-center justify-between gap-1 text-[10px] font-bold text-[#2C2F63]/75 break-keep">
+                    <span className="leading-snug">
+                      12월 1일에 {targetSnowball.nickname}가 열어볼 수 있어요 · 보낸 사람 닉네임은 공개돼요
+                    </span>
+                    <span className="font-mono font-extrabold text-[#2C2F63] shrink-0">
+                      {letterContent.trim().length} / 200자 (최소 15자)
+                    </span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={sendingLetter || letterContent.trim().length < 15}
+                    className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] disabled:bg-[#2C2F63]/40 disabled:text-white/75 text-white text-sm font-extrabold shadow-md transition-all"
+                  >
+                    {sendingLetter ? "편지 넣는 중..." : "편지 넣기"}
+                  </button>
+
+                  <p className="mt-2 text-center text-[11px] text-[#2C2F63] font-extrabold">
+                    보내면 나도 응모권 +1 · {targetSnowball.nickname}님도 +1
+                  </p>
+                </form>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* ====================================================================
@@ -785,9 +763,10 @@ function SnowballDetailContent() {
           document.body
         )}
 
-      {/* 로그인 완료 후 스노우볼 화면(S04/S05) 진입 시 노출되는 무신사 팝업 (인앱 브라우저 및 요정 연출 중에는 대기) */}
+      {/* 로그인 완료 후 스노우볼 화면(S04/S05) 최초 진입 시 딱 1회만 노출되는 무신사 팝업 (인앱 브라우저 및 요정 연출 중에는 대기) */}
       <MusinsaPopup
         isOpen={isMusinsaPopupOpen && !isFairyActive}
+        userId={authState?.userId || mySnowball?.user_id || mySnowball?.id || null}
         onClose={handleCloseMusinsaPopup}
         onApply={handleCloseMusinsaPopup}
       />

@@ -53,8 +53,16 @@ export default function ReferralPage() {
 
     if (sb) {
       const leaderboardPromise = fetch(
-        `/api/referral/leaderboard?nickname=${encodeURIComponent(sb.nickname)}`,
-        { cache: "no-store" }
+        `/api/referral/leaderboard?nickname=${encodeURIComponent(
+          sb.nickname
+        )}&_t=${Date.now()}`,
+        {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        }
       )
         .then((res) => (res.ok ? res.json() : null))
         .catch(() => null);

@@ -16,6 +16,7 @@ interface AppShellProps {
   children: React.ReactNode;
   hideDeadlineBanner?: boolean;
   hideFooter?: boolean;
+  useStageBackground?: boolean;
 }
 
 // 페이지 이동 간에도 배경음악(/bgm.mp3)이 절대 끊기거나 처음부터 다시 시작되지 않도록 유지하는 전역 오디오 싱글톤
@@ -70,6 +71,7 @@ export default function AppShell({
   children,
   hideDeadlineBanner = false,
   hideFooter = false,
+  useStageBackground = false,
 }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -548,10 +550,18 @@ export default function AppShell({
             /bg-night-snow.png?v=2 이미지를 화면 최상단에 원본 비율 그대로 고정(bg-top bg-no-repeat bg-[length:100%_auto])하고,
             이미지 아래로 이어지는 하단 영역은 #FCEED8 단색으로 경계선 없이 자연스럽게 연장 */}
         <main
-          className="relative flex flex-col min-h-[700px] bg-[#FCEED8] bg-top bg-no-repeat bg-[length:100%_auto]"
-          style={{
-            backgroundImage: "url('/bg-night-snow.png?v=2')",
-          }}
+          className={
+            useStageBackground
+              ? "relative flex flex-col bg-[#FCEED8]"
+              : "relative flex flex-col min-h-[700px] bg-[#FCEED8] bg-top bg-no-repeat bg-[length:100%_auto]"
+          }
+          style={
+            useStageBackground
+              ? undefined
+              : {
+                  backgroundImage: "url('/bg-night-snow.png?v=2')",
+                }
+          }
         >
           <div className="relative z-10 flex flex-col flex-1">{children}</div>
         </main>

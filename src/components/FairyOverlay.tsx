@@ -66,25 +66,26 @@ export default function FairyOverlay({
 
     try {
       const parentEl = containerRef.current?.parentElement;
-      let targetTop = 75;
+      let targetTop = 65;
       if (parentEl && typeof window !== "undefined") {
         const rect = parentEl.getBoundingClientRect();
         const pageTop = rect.top + window.scrollY;
         const pageBottom = rect.bottom + window.scrollY;
-        // 요정이 스노우볼 상단 위로 약 140px 올라오므로 전체 연출 영역은 [pageTop - 140 .. pageBottom]
-        const stageTop = pageTop - 140;
-        const stageBottom = pageBottom + 16;
+        // 요정이 스노우볼 컨테이너 상단 위로 32.5% 올라오므로 전체 연출 영역은 [pageTop - fairyOffset .. pageBottom]
+        const fairyOffset = rect.height * 0.325;
+        const stageTop = pageTop - fairyOffset;
+        const stageBottom = pageBottom + 12;
         const stageCenter = (stageTop + stageBottom) * 0.5;
-        // 상단 고정 헤더(약 46px)를 제외한 가시 영역 중앙에 맞춤 (최소 65px ~ 최대 130px 범위)
+        // 상단 고정 헤더(약 46px)를 제외한 가시 영역 중앙에 맞춤
         const visibleCenterOffset = (window.innerHeight + 46) * 0.5;
         const idealScroll = Math.round(stageCenter - visibleCenterOffset);
-        targetTop = Math.max(65, Math.min(130, idealScroll));
+        targetTop = Math.max(0, Math.min(160, idealScroll));
       }
       window.scrollTo({ top: targetTop, behavior: "instant" as ScrollBehavior });
       document.documentElement.scrollTop = targetTop;
       document.body.scrollTop = targetTop;
     } catch {
-      window.scrollTo(0, 75);
+      window.scrollTo(0, 65);
     }
 
     document.body.style.overflow = "hidden";
@@ -228,7 +229,7 @@ export default function FairyOverlay({
   return (
     <div
       ref={containerRef}
-      className="pointer-events-none absolute -top-[140px] sm:-top-[155px] left-1/2 -translate-x-1/2 w-[215px] sm:w-[235px] z-30 flex items-center justify-center select-none"
+      className="pointer-events-none absolute -top-[32.5%] left-1/2 -translate-x-1/2 w-[60%] z-30 flex items-center justify-center select-none"
       aria-hidden="true"
     >
       <video

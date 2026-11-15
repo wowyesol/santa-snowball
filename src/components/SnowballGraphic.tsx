@@ -10,6 +10,7 @@ interface SnowballGraphicProps {
   isShaking?: boolean;
   showShakeBadge?: boolean;
   size?: "md" | "lg";
+  inStage?: boolean;
 }
 
 interface SnowParticle {
@@ -47,6 +48,7 @@ export default function SnowballGraphic({
   isShaking = false,
   showShakeBadge = false,
   size = "lg",
+  inStage = false,
 }: SnowballGraphicProps) {
   const levelInfo = getSnowballLevelInfo(level);
   const imgSrc = overrideImageSrc || levelInfo.imageSrc;
@@ -326,14 +328,19 @@ export default function SnowballGraphic({
     };
   }, []);
 
-  // 모바일 화면(360px~430px)에서 좌우 패딩 제한을 넘어 화면에 꽉 차도록 최대 크기 확대
-  const widthClass =
-    size === "lg"
-      ? "w-[92vw] max-w-[385px] sm:w-[400px] sm:max-w-[420px]"
-      : "w-[78vw] max-w-[290px] sm:w-[300px]";
+  // Stage 내부에서는 부모 앵커 비율(w-[92%])을 100% 그대로 따르고, 서브 화면(/open 등)에서는 기존 반응형 폭 유지
+  const widthClass = inStage
+    ? "w-full"
+    : size === "lg"
+    ? "w-[92vw] max-w-[385px] sm:w-[400px] sm:max-w-[420px]"
+    : "w-[78vw] max-w-[290px] sm:w-[300px]";
 
   return (
-    <div className="relative flex flex-col items-center justify-center -mx-4 select-none">
+    <div
+      className={`relative flex flex-col items-center justify-center select-none ${
+        inStage ? "w-full" : "-mx-4"
+      }`}
+    >
       {showShakeBadge && (
         <div className="mb-1 px-3 py-1 rounded-full bg-[#2C2F63] border border-white/25 text-white text-[10px] font-extrabold leading-none shadow-sm">
           흔들림 모션
