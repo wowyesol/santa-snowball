@@ -39,7 +39,7 @@ export default function GuidePage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col px-4 pt-5 pb-12 text-white">
+      <div id="event-guide" className="flex flex-col px-4 pt-5 pb-12 text-white scroll-mt-16">
         {/* 상단 타이틀 */}
         <h1 className="text-xl font-extrabold tracking-tight text-white">
           이벤트 안내 · 유의사항

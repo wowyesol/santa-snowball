@@ -273,7 +273,7 @@ function SnowballDetailContent() {
 
   const handleApplyMusinsaPopup = () => {
     handleCloseMusinsaPopup();
-    router.push("/raffle");
+    router.push("/guide");
   };
 
   // [S05] 친구 스노우볼에 편지 넣기 제출 핸들러
