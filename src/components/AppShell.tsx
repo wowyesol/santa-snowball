@@ -439,6 +439,12 @@ export default function AppShell({
 
   const showBackButton = Boolean(pathname && SUB_ROUTES.has(pathname));
 
+  // 상단 경품 응모 띠배너 노출 조건: 서브 페이지에서는 숨기고 오직 메인 스노우볼 화면(기본 홈 '/' 및 '/snowball/[slug]')에서만 노출
+  const isMainSnowballRoute = Boolean(
+    pathname === "/" || (pathname && pathname.startsWith("/snowball/"))
+  );
+  const shouldShowTopRaffleBanner = !hideDeadlineBanner && isMainSnowballRoute;
+
   // [📷 사진 저장] 버튼 노출 조건: 오직 로그인한 본인의 '내 스노우볼 메인 화면(S04)'에서만 노출
   const decodedPathname = pathname ? decodeURIComponent(pathname) : "";
   const isMySnowballMainPage = Boolean(
@@ -563,21 +569,70 @@ export default function AppShell({
           </div>
         </header>
 
-        {/* 2) 상단 무신사 경품 응모 띠배너 (하단 눈밭 단색 #FCEED8 + 밤하늘 진한 남색 #1A1E43 단색 통일 -> /raffle 이동) */}
-        {!hideDeadlineBanner && (
+        {/* 2) 상단 경품 응모 띠배너: 오직 메인 스노우볼 화면('/', '/snowball/[slug]') 상단에만 노출 -> 클릭 시 /raffle 이동 */}
+        {shouldShowTopRaffleBanner && (
           <Link
             href="/raffle"
-            aria-label="편지 주고받고 무신사 20만원권 응모하기"
-            className="w-full bg-[#FCEED8] hover:bg-[#F7E5C8] active:opacity-95 text-[#1A1E43] py-2.5 px-3 border-b border-[#1A1E43]/12 flex items-center justify-center gap-2 transition-colors"
+            aria-label="친구랑 편지 주고받고 상품권 응모하기"
+            className="w-full bg-[#FCEDD7] hover:bg-[#F7E3C6] active:opacity-95 px-3 py-2 flex items-center justify-between gap-2 transition-colors select-none"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={encodeURI("/무신사상품권.png")}
-              alt="무신사 20만원 상품권"
-              className="h-[26px] sm:h-7 w-auto rounded bg-white object-contain border border-[#1A1E43]/15 shadow-2xs shrink-0"
-            />
-            <span className="text-[13.5px] sm:text-[14px] font-bold tracking-tight text-[#1A1E43] leading-none whitespace-nowrap">
-              편지 주고받고 무신사 20만원권 응모하기 &gt;
+            {/* 좌측 브랜드 앱 아이콘 3종 (배달의민족 · MUSINSA · 신세계) */}
+            <div className="flex items-center gap-[5px] shrink-0">
+              <span className="w-[clamp(27px,7.5vw,32px)] h-[clamp(27px,7.5vw,32px)] rounded-[8px] bg-[#62E6DC] overflow-hidden flex items-center justify-center shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={encodeURI("/배민로고.png")}
+                  alt="배달의민족"
+                  className="w-full h-full object-cover scale-[1.12]"
+                />
+              </span>
+              <span className="w-[clamp(27px,7.5vw,32px)] h-[clamp(27px,7.5vw,32px)] rounded-[8px] bg-black overflow-hidden flex items-center justify-center shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={encodeURI("/무신사로고.png")}
+                  alt="MUSINSA"
+                  className="w-full h-full object-cover"
+                />
+              </span>
+              <span className="w-[clamp(27px,7.5vw,32px)] h-[clamp(27px,7.5vw,32px)] rounded-[8px] bg-white overflow-hidden flex items-center justify-center shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={encodeURI("/신세계로고.png")}
+                  alt="신세계"
+                  className="w-full h-full object-contain"
+                />
+              </span>
+            </div>
+
+            {/* 중앙 문구 (프로젝트 메인 타이틀 동글 디스플레이 폰트 + 진한 밤하늘 남색 #1B224B) */}
+            <span
+              style={{
+                fontFamily:
+                  '"HakgyoansimDunggeunmisoTTF-B", "Cafe24Ssurround", "Gowun Dodum", sans-serif',
+              }}
+              className="flex-1 text-center font-display font-extrabold text-[clamp(11.5px,3.35vw,14px)] tracking-[-0.02em] text-[#1B224B] leading-none whitespace-nowrap"
+            >
+              친구랑 편지 주고받고 상품권 응모하기
+            </span>
+
+            {/* 우측 원형 화살표 아이콘 (#1B224B 원형 배경 + #FCEDD7 굵은 오른쪽 화살표) */}
+            <span
+              aria-hidden="true"
+              className="w-[clamp(20px,5.4vw,24px)] h-[clamp(20px,5.4vw,24px)] rounded-full bg-[#1B224B] inline-flex items-center justify-center shrink-0"
+            >
+              <svg
+                className="w-[48%] h-[48%] translate-x-[0.5px]"
+                viewBox="0 0 12 12"
+                fill="none"
+              >
+                <path
+                  d="M4.25 2.25L8 6L4.25 9.75"
+                  stroke="#FCEDD7"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </span>
           </Link>
         )}
