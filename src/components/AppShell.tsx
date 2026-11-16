@@ -563,11 +563,22 @@ export default function AppShell({
           </div>
         </header>
 
-        {/* 2) 마감 안내 띠 배너 (#2C2F63 크레용 남색 톤) */}
+        {/* 2) 상단 무신사 경품 응모 이동 띠배너 (#2C2F63 크레용 남색 톤 -> /raffle 이동) */}
         {!hideDeadlineBanner && (
-          <div className="w-full bg-[#2C2F63] text-[#FCEED8] text-center py-2 px-3 text-[11px] font-extrabold tracking-tight border-b border-white/10 shadow-xs">
-            11.28 당첨자 공개 · 12.1 편지 공개
-          </div>
+          <Link
+            href="/raffle"
+            className="w-full bg-[#2C2F63] hover:bg-[#242756] active:bg-[#1E214A] text-[#FCEED8] py-2 px-3 border-b border-white/10 shadow-xs flex items-center justify-center gap-2 transition-colors"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={encodeURI("/무신사로고.png")}
+              alt="무신사"
+              className="w-5 h-5 rounded-md object-cover border border-white/25 shrink-0"
+            />
+            <span className="text-[11px] sm:text-xs font-extrabold tracking-tight leading-none whitespace-nowrap">
+              편지 주고받고 무신사 20만원권 응모하기 &gt;
+            </span>
+          </Link>
         )}
 
         {/* 3) 본문 컨텐츠 영역:

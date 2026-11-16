@@ -430,10 +430,10 @@ export default function VerifyPage() {
               </div>
             )}
 
-            {/* 1. Gemini 대학생 플랜 가입하기 */}
+            {/* 1. Gemini 대학생 무료 플랜 가입하기 */}
             <section className="w-full p-4 rounded-2xl bg-[#F4F9FF] text-[#0B1528] shadow-md">
               <h2 className="text-xs font-extrabold text-[#102A4E] mb-1">
-                1. Gemini 대학생 플랜 가입하기
+                1. Gemini 대학생 무료 플랜 가입하기
               </h2>
               <p className="text-[11px] text-[#5B7493] mb-3 break-all">
                 로그인한 계정: {userEmail}
@@ -446,9 +446,7 @@ export default function VerifyPage() {
                 onClick={handleSignupLinkClick}
                 className="block w-full py-3.5 px-3 rounded-xl bg-[#2C2F63] hover:bg-[#222552] text-white text-xs font-extrabold text-center transition-colors shadow-xs"
               >
-                {clickedAt
-                  ? "Gemini 가입 바로가기 (다시 열기)"
-                  : "Gemini 가입 바로가기"}
+                Gemini 무료 가입 바로가기
               </a>
 
               <button
