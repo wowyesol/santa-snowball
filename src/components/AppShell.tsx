@@ -563,42 +563,21 @@ export default function AppShell({
           </div>
         </header>
 
-        {/* 2) 상단 무신사 경품 응모 포인트 띠배너 (크림 골드 그라데이션 -> /raffle 이동) */}
+        {/* 2) 상단 무신사 경품 응모 띠배너 (하단 눈밭 단색 #FCEED8 + 밤하늘 진한 남색 #1A1E43 단색 통일 -> /raffle 이동) */}
         {!hideDeadlineBanner && (
           <Link
             href="/raffle"
             aria-label="편지 주고받고 무신사 20만원권 응모하기"
-            className="group w-full bg-gradient-to-r from-[#FFF6E0] via-[#FFEBB8] to-[#FFF6E0] hover:from-[#FFF1CF] hover:via-[#FFE29A] hover:to-[#FFF1CF] active:scale-[0.995] py-2.5 px-3 border-b border-[#E2BE6F]/80 shadow-[0_3px_12px_rgba(15,18,45,0.28)] flex items-center justify-center gap-2 transition-all"
+            className="w-full bg-[#FCEED8] hover:bg-[#F7E5C8] active:opacity-95 text-[#1A1E43] py-2.5 px-3 border-b border-[#1A1E43]/12 flex items-center justify-center gap-2 transition-colors"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={encodeURI("/무신사로고.png")}
-              alt="MUSINSA"
-              className="w-[30px] h-[30px] rounded-md bg-black object-contain shadow-sm ring-1 ring-black/15 shrink-0"
+              src={encodeURI("/무신사상품권.png")}
+              alt="무신사 20만원 상품권"
+              className="h-[26px] sm:h-7 w-auto rounded bg-white object-contain border border-[#1A1E43]/15 shadow-2xs shrink-0"
             />
-            <span className="text-[14px] sm:text-[15px] font-extrabold tracking-tight text-[#141838] leading-none whitespace-nowrap">
-              편지 주고받고{" "}
-              <span className="text-[#D92B2B] font-black underline decoration-[#D92B2B]/45 decoration-2 underline-offset-[3px]">
-                무신사 20만원권
-              </span>{" "}
-              응모하기
-            </span>
-            <span
-              aria-hidden="true"
-              className="w-5 h-5 rounded-full bg-[#1A1E43] text-[#FFF6E0] inline-flex items-center justify-center shadow-xs shrink-0 group-hover:translate-x-0.5 transition-transform"
-            >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+            <span className="text-[13.5px] sm:text-[14px] font-bold tracking-tight text-[#1A1E43] leading-none whitespace-nowrap">
+              편지 주고받고 무신사 20만원권 응모하기 &gt;
             </span>
           </Link>
         )}
