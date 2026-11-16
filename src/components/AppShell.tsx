@@ -563,20 +563,42 @@ export default function AppShell({
           </div>
         </header>
 
-        {/* 2) 상단 무신사 경품 응모 이동 띠배너 (#2C2F63 크레용 남색 톤 -> /raffle 이동) */}
+        {/* 2) 상단 무신사 경품 응모 포인트 띠배너 (크림 골드 그라데이션 -> /raffle 이동) */}
         {!hideDeadlineBanner && (
           <Link
             href="/raffle"
-            className="w-full bg-[#2C2F63] hover:bg-[#242756] active:bg-[#1E214A] text-[#FCEED8] py-2 px-3 border-b border-white/10 shadow-xs flex items-center justify-center gap-2 transition-colors"
+            aria-label="편지 주고받고 무신사 20만원권 응모하기"
+            className="group w-full bg-gradient-to-r from-[#FFF6E0] via-[#FFEBB8] to-[#FFF6E0] hover:from-[#FFF1CF] hover:via-[#FFE29A] hover:to-[#FFF1CF] active:scale-[0.995] py-2.5 px-3 border-b border-[#E2BE6F]/80 shadow-[0_3px_12px_rgba(15,18,45,0.28)] flex items-center justify-center gap-2 transition-all"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={encodeURI("/무신사로고.png")}
-              alt="무신사"
-              className="w-5 h-5 rounded-md object-cover border border-white/25 shrink-0"
+              alt="MUSINSA"
+              className="w-[30px] h-[30px] rounded-md bg-black object-contain shadow-sm ring-1 ring-black/15 shrink-0"
             />
-            <span className="text-[11px] sm:text-xs font-extrabold tracking-tight leading-none whitespace-nowrap">
-              편지 주고받고 무신사 20만원권 응모하기 &gt;
+            <span className="text-[14px] sm:text-[15px] font-extrabold tracking-tight text-[#141838] leading-none whitespace-nowrap">
+              편지 주고받고{" "}
+              <span className="text-[#D92B2B] font-black underline decoration-[#D92B2B]/45 decoration-2 underline-offset-[3px]">
+                무신사 20만원권
+              </span>{" "}
+              응모하기
+            </span>
+            <span
+              aria-hidden="true"
+              className="w-5 h-5 rounded-full bg-[#1A1E43] text-[#FFF6E0] inline-flex items-center justify-center shadow-xs shrink-0 group-hover:translate-x-0.5 transition-transform"
+            >
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
             </span>
           </Link>
         )}
