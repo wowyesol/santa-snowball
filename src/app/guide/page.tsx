@@ -8,7 +8,7 @@ interface FaqItem {
   a: string;
 }
 
-// 클릭 시 펼쳐지는 아코디언(Accordion) FAQ 4개 항목 정의
+// 클릭 시 펼쳐지는 아코디언(Accordion) FAQ 항목 정의
 const FAQ_LIST: FaqItem[] = [
   {
     q: "Q. 이미 Gemini 계정이 있으면 참여할 수 없나요?",
@@ -21,10 +21,6 @@ const FAQ_LIST: FaqItem[] = [
   {
     q: "Q. 응모권을 여러 상품에 나눠 걸 수 있나요?",
     a: "네! 보유한 응모권 내에서 1등 무신사, 2등 신세계, 3등 배민 상품에 원하는 만큼 자유롭게 배분해서 걸 수 있습니다. 또한 응모권을 1장 이상 보유한 모든 참여자는 투썸플레이스 1만 원권(15명) 추첨에 자동 응모됩니다.",
-  },
-  {
-    q: "Q. 1 · 2등 당첨 시 세금이 있나요?",
-    a: "5만 원을 초과하는 경품(1등 무신사 20만 원, 2등 신세계 10만 원)은 소득세법에 따라 제세공과금(22%) 신고 대상입니다. 당첨 발표 후 입력하신 이메일을 통해 관련 서류 안내를 개별 발송해 드립니다.",
   },
 ];
 
@@ -95,7 +91,7 @@ export default function GuidePage() {
                   친구 스노우볼에 편지 넣기
                 </span>
                 <span className="shrink-0 font-extrabold text-slate-900">
-                  +1장 (최대 10명)
+                  +1장
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3 py-2">
@@ -103,7 +99,7 @@ export default function GuidePage() {
                   내 스노우볼에 편지 받기
                 </span>
                 <span className="shrink-0 font-extrabold text-slate-900">
-                  +1장 (무제한)
+                  +1장
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3 py-2">
@@ -119,7 +115,7 @@ export default function GuidePage() {
                   내가 초대한 친구의 Gemini 가입 승인
                 </span>
                 <span className="shrink-0 font-extrabold text-indigo-700 text-right">
-                  +50장 · LV+1 (무제한)
+                  +50장 · LV+1
                 </span>
               </div>
             </div>

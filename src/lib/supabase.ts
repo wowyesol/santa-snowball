@@ -1093,7 +1093,7 @@ export async function sendGiftLetter(
     throw new Error(insertError?.message || "편지 전송 중 오류가 발생했습니다.");
   }
 
-  // 받은 사람(스노우볼 주인): 무조건 ticket_count + 1 DB 즉시 반영
+  // 받은 사람(스노우볼 주인): 횟수 제한 없이 무조건 ticket_count + 1 DB 즉시 반영
   const freshReceiver = await getSnowballById(targetSnowball.id);
   if (freshReceiver) {
     await supabase
@@ -1104,24 +1104,22 @@ export async function sendGiftLetter(
       .eq("id", freshReceiver.id);
   }
 
-  // 보낸 사람(작성자): 내가 보낸 총 편지 수가 10통 이하일 때만 ticket_count + 1 DB 즉시 반영
+  // 보낸 사람(작성자): 횟수 상한 없이 편지를 보낼 때마다 무조건 ticket_count + 1 DB 즉시 반영 (동일인 중복 전송은 위에서 차단됨)
   const totalSentCount = await getMyTotalSentLettersCount(
     effectiveSenderUserId,
     senderSnowball.nickname
   );
   let senderRewarded = false;
 
-  if (totalSentCount <= 10) {
-    const freshSender = await getSnowballById(senderSnowball.id);
-    if (freshSender) {
-      await supabase
-        .from("snowballs")
-        .update({
-          ticket_count: (Number(freshSender.ticket_count) || 0) + 1,
-        })
-        .eq("id", freshSender.id);
-      senderRewarded = true;
-    }
+  const freshSender = await getSnowballById(senderSnowball.id);
+  if (freshSender) {
+    await supabase
+      .from("snowballs")
+      .update({
+        ticket_count: (Number(freshSender.ticket_count) || 0) + 1,
+      })
+      .eq("id", freshSender.id);
+    senderRewarded = true;
   }
 
   notifyAuthChanged();

@@ -15,6 +15,7 @@ import InAppBrowserGuard, {
   detectInAppBrowser,
 } from "@/components/InAppBrowserGuard";
 import FairyOverlay from "@/components/FairyOverlay";
+import { withSubjectParticle, withVocativeParticle } from "@/lib/korean";
 import {
   AuthSnowballState,
   Letter,
@@ -270,6 +271,11 @@ function SnowballDetailContent() {
     setIsMusinsaPopupOpen(false);
   };
 
+  const handleApplyMusinsaPopup = () => {
+    handleCloseMusinsaPopup();
+    router.push("/guide");
+  };
+
   // [S05] 친구 스노우볼에 편지 넣기 제출 핸들러
   const handleSendLetterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -296,11 +302,7 @@ function SnowballDetailContent() {
       }
       setIsFairyActive(true);
 
-      if (result.senderRewarded) {
-        setJustSentRewardMsg("응모권 +1장");
-      } else {
-        setJustSentRewardMsg("응모권은 10장까지 쌓여요 (친구에게 +1장 전달 완료)");
-      }
+      setJustSentRewardMsg("응모권 +1장");
 
       const refreshed = await getVisibleLettersBySnowballId(targetSnowball.id);
       setLetters(refreshed);
@@ -627,14 +629,14 @@ function SnowballDetailContent() {
                     onChange={(e) =>
                       setLetterContent(e.target.value.slice(0, 200))
                     }
-                    placeholder={`${targetSnowball.nickname}아 메리 크리스마스! 시험 끝나면 같이 맛있는 거 먹으러 가자! (최소 15자)`}
+                    placeholder={`${withVocativeParticle(targetSnowball.nickname)} 메리 크리스마스! 시험 끝나면 같이 맛있는 거 먹으러 가자! (최소 15자)`}
                     required
                     className="w-full p-3.5 rounded-2xl bg-[#F8F9FE] border border-[#2C2F63]/20 text-xs font-semibold text-[#2C2F63] placeholder:text-[#2C2F63]/45 focus:outline-none focus:ring-2 focus:ring-[#2C2F63] shadow-inner resize-none"
                   />
 
                   <div className="mt-1.5 mb-3 flex flex-wrap items-center justify-between gap-1 text-[10px] font-bold text-[#2C2F63]/75 break-keep">
                     <span className="leading-snug">
-                      12월 1일에 {targetSnowball.nickname}가 열어볼 수 있어요 · 보낸 사람 닉네임은 공개돼요
+                      12월 1일에 {withSubjectParticle(targetSnowball.nickname)} 열어볼 수 있어요 · 보낸 사람 닉네임은 공개돼요
                     </span>
                     <span className="font-mono font-extrabold text-[#2C2F63] shrink-0">
                       {letterContent.trim().length} / 200자 (최소 15자)
@@ -793,7 +795,7 @@ function SnowballDetailContent() {
         isOpen={isMusinsaPopupOpen && !isFairyActive}
         userId={authState?.userId || mySnowball?.user_id || mySnowball?.id || null}
         onClose={handleCloseMusinsaPopup}
-        onApply={handleCloseMusinsaPopup}
+        onApply={handleApplyMusinsaPopup}
       />
     </AppShell>
   );

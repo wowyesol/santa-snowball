@@ -41,7 +41,7 @@ interface MusinsaPopupProps {
 }
 
 /**
- * P00: 무신사 팝업 (/popup.png 통이미지 + 하단 '편지쓰러 가기' 버튼)
+ * P00: 무신사 팝업 (/popup.png 통이미지 + 하단 '이벤트 안내 보기' 버튼)
  * - 인앱 브라우저나 비로그인 상태에서는 절대 노출하지 않으며,
  *   일반 브라우저에서 로그인 완료 후 스노우볼 화면 최초 진입 시 딱 1회만 노출합니다.
  * - 한 번이라도 화면에 노출되거나 닫기/버튼 클릭 시 즉시 localStorage에 영구 기록합니다.
@@ -117,13 +117,13 @@ export default function MusinsaPopup({
           />
         </div>
 
-        {/* 하단 남색(#2C2F63) CTA 버튼: '편지쓰러 가기' */}
+        {/* 하단 남색(#2C2F63) CTA 버튼: '이벤트 안내 보기' */}
         <button
           type="button"
           onClick={handleApplyClick}
           className="w-full py-3.5 rounded-xl bg-[#2C2F63] hover:bg-[#222552] active:scale-[0.99] text-white text-sm font-extrabold transition-all shadow-md"
         >
-          편지쓰러 가기
+          이벤트 안내 보기
         </button>
       </div>
     </div>

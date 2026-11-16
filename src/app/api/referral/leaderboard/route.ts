@@ -165,7 +165,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 3) 편지 수·발신 집계 및 달성 시각 추적 (보낸 편지 보상은 최대 10통까지만 인정)
+    // 3) 편지 수·발신 집계 및 달성 시각 추적 (발신·수신 모두 횟수 제한 없이 +1장씩 인정)
     const receivedLetterCountById = new Map<string, number>();
     const sentLetterCountById = new Map<string, number>();
     const latestAchievedAtById = new Map<string, number>();
@@ -210,9 +210,7 @@ export async function GET(req: NextRequest) {
       if (senderSnowballId && senderSnowballId !== receiverId) {
         const nextSent = (sentLetterCountById.get(senderSnowballId) ?? 0) + 1;
         sentLetterCountById.set(senderSnowballId, nextSent);
-        if (nextSent <= 10) {
-          recordAchievedAt(senderSnowballId, letter.created_at);
-        }
+        recordAchievedAt(senderSnowballId, letter.created_at);
       }
     }
 
@@ -279,7 +277,7 @@ export async function GET(req: NextRequest) {
 
       // 승인되지 않은(pending / rejected) 제미나이 인증 보너스가 섞여 있는지 엄격 검증하여 차감 보호
       const receivedCount = receivedLetterCountById.get(id) ?? 0;
-      const sentRewardCount = Math.min(10, sentLetterCountById.get(id) ?? 0);
+      const sentRewardCount = sentLetterCountById.get(id) ?? 0;
       const hasApprovedSelf = approvedSelfById.has(id);
       const approvedRefCount = approvedRefFriendsById.get(id)?.size ?? 0;
 
