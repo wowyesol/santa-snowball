@@ -254,8 +254,15 @@ export default function AppShell({
     setIsSavingPhoto(true);
 
     try {
-      if (typeof document !== "undefined" && document.fonts?.ready) {
-        await document.fonts.ready;
+      if (typeof document !== "undefined" && document.fonts) {
+        await Promise.allSettled([
+          document.fonts.load('800 48px "HakgyoansimDunggeunmisoTTF-B"'),
+          document.fonts.load("normal 48px 'Cafe24Ssurround'"),
+          document.fonts.load("700 48px 'Cafe24Ssurround'"),
+        ]);
+        if (document.fonts.ready) {
+          await document.fonts.ready;
+        }
       }
 
       const levelInfo = getSnowballLevelInfo(sb.level);
@@ -298,10 +305,10 @@ export default function AppShell({
       const titleY1 = Math.round(canvasH * 0.13);
       const titleY2 = titleY1 + Math.round(canvasW * 0.086);
 
-      ctx.font = `800 ${titleFontSize1}px "HakgyoansimDunggeunmisoTTF-B", "Gowun Dodum", sans-serif`;
+      ctx.font = `800 ${titleFontSize1}px "HakgyoansimDunggeunmisoTTF-B", 'Cafe24Ssurround', "Gowun Dodum", sans-serif`;
       ctx.fillText(`${sb.nickname}의`, canvasW * 0.5, titleY1);
 
-      ctx.font = `700 ${titleFontSize2}px "HakgyoansimDunggeunmisoTTF-B", "Gowun Dodum", sans-serif`;
+      ctx.font = `700 ${titleFontSize2}px "HakgyoansimDunggeunmisoTTF-B", 'Cafe24Ssurround', "Gowun Dodum", sans-serif`;
       ctx.fillText("스노우볼", canvasW * 0.5, titleY2);
       ctx.restore();
 

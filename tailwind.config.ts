@@ -7,7 +7,25 @@ const config: Config = {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        display: [
+          '"HakgyoansimDunggeunmisoTTF-B"',
+          "'Cafe24Ssurround'",
+          '"Gowun Dodum"',
+          "sans-serif",
+        ],
+        sans: [
+          '"Gowun Dodum"',
+          "'Cafe24Ssurround'",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          '"Segoe UI"',
+          "Roboto",
+          "sans-serif",
+        ],
+      },
+    },
   },
   plugins: [],
 };

@@ -718,7 +718,10 @@ function SnowballDetailContent() {
               ) : (
                 <>
                   <p
-                    style={{ fontFamily: '"Gowun Dodum", sans-serif' }}
+                    style={{
+                      fontFamily:
+                        '"Gowun Dodum", \'Cafe24Ssurround\', sans-serif',
+                    }}
                     className="mb-3 text-left text-xs font-medium text-[#2C2F63]"
                   >
                     편지는 12월 1일에 공개 돼요
@@ -730,19 +733,26 @@ function SnowballDetailContent() {
                         key={item.id}
                         style={{
                           backgroundColor: levelInfo.letterCardBgHex,
-                          fontFamily: '"Gowun Dodum", sans-serif',
+                          fontFamily:
+                            '"Gowun Dodum", \'Cafe24Ssurround\', sans-serif',
                         }}
                         className="p-3.5 rounded-2xl border border-[#2C2F63]/15 text-[#2C2F63] text-left shadow-sm"
                       >
                         <div className="flex items-center justify-between mb-1.5">
                           <span
-                            style={{ fontFamily: '"Gowun Dodum", sans-serif' }}
+                            style={{
+                              fontFamily:
+                                '"Gowun Dodum", \'Cafe24Ssurround\', sans-serif',
+                            }}
                             className="text-xs font-medium text-[#2C2F63]"
                           >
                             from.{item.sender_name}
                           </span>
                           <span
-                            style={{ fontFamily: '"Gowun Dodum", sans-serif' }}
+                            style={{
+                              fontFamily:
+                                '"Gowun Dodum", \'Cafe24Ssurround\', sans-serif',
+                            }}
                             className="text-[10px] font-normal text-[#2C2F63]/70"
                           >
                             {item.created_at
@@ -755,7 +765,10 @@ function SnowballDetailContent() {
                         </div>
                         {/* 12월 1일 공개 전까지 편지 원문 스포일러 원천 차단 (고정 마스킹 + 짙은 남색 #2C2F63 블러 처리) */}
                         <p
-                          style={{ fontFamily: '"Gowun Dodum", sans-serif' }}
+                          style={{
+                            fontFamily:
+                              '"Gowun Dodum", \'Cafe24Ssurround\', sans-serif',
+                          }}
                           className="text-xs font-normal text-[#2C2F63]/75 leading-relaxed blur-[6px] select-none pointer-events-none"
                           aria-hidden="true"
                         >
