@@ -35,6 +35,11 @@ export default function RafflePage() {
   });
 
   const [draftAlloc, setDraftAlloc] = useState<Record<string, number>>({});
+  // 수량 직접 타이핑 중 빈칸("") 허용을 위한 포커스 입력 상태
+  const [editingInput, setEditingInput] = useState<{
+    prizeId: string;
+    raw: string;
+  } | null>(null);
   const [isP03Open, setIsP03Open] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -58,6 +63,7 @@ export default function RafflePage() {
 
     const onAuthChange = () => {
       setDraftAlloc({});
+      setEditingInput(null);
       loadRaffleData();
     };
     window.addEventListener("santa-auth-changed", onAuthChange);
@@ -78,17 +84,64 @@ export default function RafflePage() {
   const adjustCount = (prizeId: string, delta: number) => {
     setErrorMsg(null);
     setSuccessMsg(null);
+    setEditingInput(null);
 
     setDraftAlloc((prev) => {
       const current = prev[prizeId] || 0;
+      const otherSum = Object.entries(prev).reduce(
+        (sum, [id, val]) => (id === prizeId ? sum : sum + (val || 0)),
+        0
+      );
+      const maxForPrize = Math.max(0, summary.availableTickets - otherSum);
+
       if (delta > 0) {
-        const allowedAdd = Math.min(delta, remainingSelectable);
-        if (allowedAdd <= 0) return prev;
-        return { ...prev, [prizeId]: current + allowedAdd };
+        const nextVal = Math.min(maxForPrize, current + delta);
+        if (nextVal === current) return prev;
+        return { ...prev, [prizeId]: nextVal };
       } else {
         const nextVal = Math.max(0, current + delta);
         return { ...prev, [prizeId]: nextVal };
       }
+    });
+  };
+
+  // 숫자 키패드 직접 입력 핸들러 (숫자 외 문자 제거, 앞자리 0 정리, 잔여 보유 응모권 기준 최대 가능 수량 즉시 클램핑)
+  const handleDirectInputChange = (prizeId: string, rawValue: string) => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    // 숫자 이외의 모든 문자 즉시 제거
+    const digitsOnly = rawValue.replace(/\D/g, "");
+
+    // 입력 도중 모두 지운 빈칸 상태는 포커스 유지 동안 허용하되 배분 수량은 0으로 반영
+    if (digitsOnly === "") {
+      setEditingInput({ prizeId, raw: "" });
+      setDraftAlloc((prev) => ({ ...prev, [prizeId]: 0 }));
+      return;
+    }
+
+    const parsed = parseInt(digitsOnly, 10);
+    const safeNum = Number.isNaN(parsed) ? 0 : Math.max(0, parsed);
+
+    setDraftAlloc((prev) => {
+      const otherSum = Object.entries(prev).reduce(
+        (sum, [id, val]) => (id === prizeId ? sum : sum + (val || 0)),
+        0
+      );
+      const maxForPrize = Math.max(0, summary.availableTickets - otherSum);
+      const clamped = Math.min(safeNum, maxForPrize);
+
+      // 앞자리 불필요한 0 정리('05' -> '5') 및 최대치 초과 입력 시 즉시 보정된 숫자 표시
+      setEditingInput({ prizeId, raw: String(clamped) });
+      return { ...prev, [prizeId]: clamped };
+    });
+  };
+
+  const handleDirectInputBlur = (prizeId: string) => {
+    setEditingInput((prev) => (prev?.prizeId === prizeId ? null : prev));
+    setDraftAlloc((prev) => {
+      const current = prev[prizeId] || 0;
+      return { ...prev, [prizeId]: Math.max(0, current) };
     });
   };
 
@@ -101,6 +154,7 @@ export default function RafflePage() {
       const updated = await submitRaffleAllocations(mySnowball.id, draftAlloc);
       setSummary(updated);
       setDraftAlloc({});
+      setEditingInput(null);
       setIsP03Open(false);
       setSuccessMsg(
         `✓ 응모권 ${draftTotal}장이 성공적으로 반영되었어요! (남은 응모권 ${updated.availableTickets}장)`
@@ -276,9 +330,33 @@ export default function RafflePage() {
                       −
                     </button>
 
-                    <div className="w-12 h-8 rounded-lg border border-[#BFD8F5] bg-white flex items-center justify-center text-xs font-extrabold text-[#102A4E]">
-                      {currentDraft}
-                    </div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      aria-label={`${prize.shortTitle} 응모권 수량 입력`}
+                      value={
+                        editingInput?.prizeId === prize.id
+                          ? editingInput.raw
+                          : String(currentDraft)
+                      }
+                      onFocus={(e) => {
+                        setEditingInput({
+                          prizeId: prize.id,
+                          raw: String(currentDraft),
+                        });
+                        e.currentTarget.select();
+                      }}
+                      onChange={(e) =>
+                        handleDirectInputChange(prize.id, e.target.value)
+                      }
+                      onBlur={() => handleDirectInputBlur(prize.id)}
+                      style={{
+                        fontFamily:
+                          '"HakgyoansimDunggeunmisoTTF-B", "CookieRun-Bold", \'ONE-Mobile-POP\', "Gowun Dodum", sans-serif',
+                      }}
+                      className="w-14 h-8 px-1 rounded-lg border border-[#BFD8F5] bg-white text-center text-xs font-extrabold text-[#102A4E] focus:outline-none focus:ring-2 focus:ring-[#2C2F63]/35 focus:border-[#2C2F63] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
 
                     <button
                       type="button"
