@@ -11,12 +11,14 @@ const config: Config = {
       fontFamily: {
         display: [
           '"HakgyoansimDunggeunmisoTTF-B"',
+          '"CookieRun-Bold"',
           "'ONE-Mobile-POP'",
           '"Gowun Dodum"',
           "sans-serif",
         ],
         sans: [
           '"Gowun Dodum"',
+          '"CookieRun-Bold"',
           "'ONE-Mobile-POP'",
           "-apple-system",
           "BlinkMacSystemFont",

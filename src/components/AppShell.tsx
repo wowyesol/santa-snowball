@@ -6,8 +6,10 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   AuthSnowballState,
   clearPendingInviteSlug,
+  computeAndSyncSnowballLevel,
   consumeFlashToast,
   getCurrentAuthAndSnowball,
+  getSnowballById,
   getSnowballLevelInfo,
   isSigningOut,
   logPageViewOncePerSession,
@@ -15,6 +17,7 @@ import {
   signOutAll,
   supabase,
 } from "@/lib/supabase";
+import { fillCenteredDisplayTextOnCanvas } from "@/lib/fontFallback";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -257,7 +260,7 @@ export default function AppShell({
       if (typeof document !== "undefined" && document.fonts) {
         await Promise.allSettled([
           document.fonts.load('800 48px "HakgyoansimDunggeunmisoTTF-B"'),
-          document.fonts.load("normal 48px 'ONE-Mobile-POP'"),
+          document.fonts.load('700 48px "CookieRun-Bold"'),
           document.fonts.load("700 48px 'ONE-Mobile-POP'"),
         ]);
         if (document.fonts.ready) {
@@ -265,7 +268,10 @@ export default function AppShell({
         }
       }
 
-      const levelInfo = getSnowballLevelInfo(sb.level);
+      // 민트색(Lv.0) 고정 버그 방지: 저장 시점에 최신 DB 상태와 승인 건수 기반 실제 스노우볼 레벨을 실시간 조회하여 반영
+      const freshSb = (await getSnowballById(sb.id)) || sb;
+      const latestLevel = await computeAndSyncSnowballLevel(freshSb);
+      const levelInfo = getSnowballLevelInfo(latestLevel);
       const loadImage = (src: string) =>
         new Promise<HTMLImageElement>((resolve, reject) => {
           const img = new window.Image();
@@ -291,11 +297,9 @@ export default function AppShell({
 
       ctx.drawImage(bgImg, 0, 0, canvasW, canvasH);
 
-      // 2) 상단 타이틀: 웹 화면과 동일한 위치 비율(상단에서 약 13% 지점)에 '[닉네임]의\n스노우볼' 그리기
+      // 2) 상단 타이틀: 일반 글자는 동그리 폰트, 미지원 희귀 한글('슮' 등)만 CookieRun-Bold로 글자 단위 분리 렌더링
       ctx.save();
       ctx.fillStyle = "#FFFFFF";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
       ctx.shadowColor = "rgba(26, 30, 67, 0.38)";
       ctx.shadowBlur = Math.round(canvasW * 0.015);
       ctx.shadowOffsetY = Math.round(canvasW * 0.004);
@@ -305,11 +309,22 @@ export default function AppShell({
       const titleY1 = Math.round(canvasH * 0.13);
       const titleY2 = titleY1 + Math.round(canvasW * 0.086);
 
-      ctx.font = `800 ${titleFontSize1}px "HakgyoansimDunggeunmisoTTF-B", 'ONE-Mobile-POP', "Gowun Dodum", sans-serif`;
-      ctx.fillText(`${sb.nickname}의`, canvasW * 0.5, titleY1);
-
-      ctx.font = `700 ${titleFontSize2}px "HakgyoansimDunggeunmisoTTF-B", 'ONE-Mobile-POP', "Gowun Dodum", sans-serif`;
-      ctx.fillText("스노우볼", canvasW * 0.5, titleY2);
+      fillCenteredDisplayTextOnCanvas(
+        ctx,
+        `${freshSb.nickname}의`,
+        canvasW * 0.5,
+        titleY1,
+        titleFontSize1,
+        800
+      );
+      fillCenteredDisplayTextOnCanvas(
+        ctx,
+        "스노우볼",
+        canvasW * 0.5,
+        titleY2,
+        titleFontSize2,
+        700
+      );
       ctx.restore();
 
       // 3) 스노우볼 크기 및 위치: 웹 화면처럼 큼직하게 캔버스 가로 폭의 88% 크기로 그리고,
@@ -615,7 +630,7 @@ export default function AppShell({
             <span
               style={{
                 fontFamily:
-                  '"HakgyoansimDunggeunmisoTTF-B", \'ONE-Mobile-POP\', "Gowun Dodum", sans-serif',
+                  '"HakgyoansimDunggeunmisoTTF-B", "CookieRun-Bold", \'ONE-Mobile-POP\', "Gowun Dodum", sans-serif',
               }}
               className="flex-1 text-center font-display font-extrabold text-[clamp(11.5px,3.35vw,14px)] tracking-[-0.02em] text-[#1B224B] leading-none whitespace-nowrap"
             >

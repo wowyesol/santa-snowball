@@ -200,11 +200,15 @@ export default function LandingView() {
             </p>
           </div>
 
-          {/* 중앙 스노우볼 앵커: 상단 배지/편지 수 유무나 기기 화면 비율과 무관하게 눈언덕 지면(bottom 4.8%)에 100% 고정 착지 */}
+          {/* 중앙 스노우볼 앵커: 비로그인 기본 홈(/)은 기존 대표 스노우볼 유지, 친구 공유 링크(/?sb=[slug])는 해당 친구의 실제 스노우볼 색상 반영 */}
           <div className="absolute left-1/2 -translate-x-1/2 bottom-[4.8%] z-10 w-[92%] pointer-events-none">
             <SnowballGraphic
-              level={3}
-              overrideImageSrc="/lv3_snowball.png?v=2"
+              level={isFriendInvite && friendSnowball ? friendSnowball.level : 3}
+              overrideImageSrc={
+                isFriendInvite && friendSnowball
+                  ? undefined
+                  : "/lv3_snowball.png?v=2"
+              }
               size="lg"
               inStage
             />

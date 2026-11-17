@@ -752,7 +752,10 @@ export async function getSnowballByUserId(
     console.error("[Supabase] getSnowballByUserId 오류:", error.message);
     return null;
   }
-  return (data as Snowball | null) ?? null;
+  const sb = (data as Snowball | null) ?? null;
+  if (!sb) return null;
+  const effectiveLevel = await computeEffectiveSnowballLevel(sb);
+  return { ...sb, level: effectiveLevel };
 }
 
 export async function getSnowballById(id: string): Promise<Snowball | null> {
@@ -766,7 +769,10 @@ export async function getSnowballById(id: string): Promise<Snowball | null> {
     console.error("[Supabase] getSnowballById 오류:", error.message);
     return null;
   }
-  return (data as Snowball | null) ?? null;
+  const sb = (data as Snowball | null) ?? null;
+  if (!sb) return null;
+  const effectiveLevel = await computeEffectiveSnowballLevel(sb);
+  return { ...sb, level: effectiveLevel };
 }
 
 export async function getSnowballBySlug(
@@ -785,7 +791,10 @@ export async function getSnowballBySlug(
     console.error("[Supabase] getSnowballBySlug 오류:", error.message);
     return null;
   }
-  return (data as Snowball | null) ?? null;
+  const sb = (data as Snowball | null) ?? null;
+  if (!sb) return null;
+  const effectiveLevel = await computeEffectiveSnowballLevel(sb);
+  return { ...sb, level: effectiveLevel };
 }
 
 export async function getSnowballByNickname(
@@ -901,22 +910,49 @@ export async function createSnowball(
  * ========================================================================== */
 
 /**
+ * DB의 snowballs.level 컬럼이 아직 동기화되기 전이거나 비로그인/서버 환경(OG 미리보기 등)에서 조회할 때도
+ * 항상 유저의 실제 스노우볼 레벨(색상 스킨: Lv.0 민트 / Lv.1 핑크 / Lv.3 골드)을 정확히 계산하는 순수 조회 함수
+ */
+export async function computeEffectiveSnowballLevel(
+  snowball: Snowball
+): Promise<number> {
+  let isSelfApproved =
+    Boolean(snowball.gemini_verified) || snowball.gemini_status === "승인";
+
+  const [selfVerifRes, approvedRefRes] = await Promise.all([
+    isSelfApproved
+      ? Promise.resolve({ count: 1 })
+      : supabase
+          .from("gemini_verifications")
+          .select("id", { count: "exact", head: true })
+          .eq("snowball_id", snowball.id)
+          .eq("status", "승인"),
+    supabase
+      .from("gemini_verifications")
+      .select("id", { count: "exact", head: true })
+      .eq("referrer_slug", snowball.nickname)
+      .eq("status", "승인"),
+  ]);
+
+  if ((selfVerifRes.count ?? 0) > 0) {
+    isSelfApproved = true;
+  }
+
+  const selfBonus = isSelfApproved ? 1 : 0;
+  const approvedRefCount = approvedRefRes.count ?? 0;
+  const calculatedLevel = selfBonus + approvedRefCount;
+
+  return Math.max(Number(snowball.level) || 0, calculatedLevel);
+}
+
+/**
  * 본인 Gemini 승인 여부(+1)와 나를 추천인으로 입력해 승인된 친구 수(+1 × N)를 합산해
  * 실제 사인업 레벨을 계산하고 DB의 level 값과 동기화합니다.
  */
 export async function computeAndSyncSnowballLevel(
   snowball: Snowball
 ): Promise<number> {
-  const selfBonus =
-    snowball.gemini_verified || snowball.gemini_status === "승인" ? 1 : 0;
-
-  const { count: approvedRefCount } = await supabase
-    .from("gemini_verifications")
-    .select("id", { count: "exact", head: true })
-    .eq("referrer_slug", snowball.nickname)
-    .eq("status", "승인");
-
-  const calculatedLevel = selfBonus + (approvedRefCount ?? 0);
+  const calculatedLevel = await computeEffectiveSnowballLevel(snowball);
 
   if (calculatedLevel !== snowball.level) {
     await supabase
@@ -1416,7 +1452,7 @@ export async function updateGeminiVerificationStatusForAdmin(
     );
   }
 
-  // 스노우볼의 gemini_status 표시 상태 동기화 (응모권 지급은 DB Trigger에서 자동 처리)
+  // 스노우볼의 gemini_status 표시 상태 및 본인/추천인 level 컬럼까지 즉시 DB 동기화
   if (verification.snowball_id) {
     await supabase
       .from("snowballs")
@@ -1425,6 +1461,41 @@ export async function updateGeminiVerificationStatusForAdmin(
         gemini_verified: nextStatus === "승인",
       })
       .eq("id", verification.snowball_id);
+
+    const { data: ownerSb } = await supabase
+      .from("snowballs")
+      .select("*")
+      .eq("id", verification.snowball_id)
+      .maybeSingle();
+    if (ownerSb) {
+      // 반려 시 재계산이 반영되도록 기존 level을 0으로 두고 순수 승인 건수 기준으로 동기화
+      const recalculatedOwnerLevel = await computeEffectiveSnowballLevel({
+        ...(ownerSb as Snowball),
+        level: 0,
+      });
+      await supabase
+        .from("snowballs")
+        .update({ level: recalculatedOwnerLevel })
+        .eq("id", verification.snowball_id);
+    }
+  }
+
+  if (verification.referrer_slug && verification.referrer_slug.trim() !== "") {
+    const { data: refSb } = await supabase
+      .from("snowballs")
+      .select("*")
+      .eq("nickname", verification.referrer_slug.trim())
+      .maybeSingle();
+    if (refSb) {
+      const recalculatedRefLevel = await computeEffectiveSnowballLevel({
+        ...(refSb as Snowball),
+        level: 0,
+      });
+      await supabase
+        .from("snowballs")
+        .update({ level: recalculatedRefLevel })
+        .eq("id", (refSb as Snowball).id);
+    }
   }
 
   notifyAuthChanged();

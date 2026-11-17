@@ -720,7 +720,7 @@ function SnowballDetailContent() {
                   <p
                     style={{
                       fontFamily:
-                        '"Gowun Dodum", \'ONE-Mobile-POP\', sans-serif',
+                        '"Gowun Dodum", "CookieRun-Bold", \'ONE-Mobile-POP\', sans-serif',
                     }}
                     className="mb-3 text-left text-xs font-medium text-[#2C2F63]"
                   >
@@ -734,7 +734,7 @@ function SnowballDetailContent() {
                         style={{
                           backgroundColor: levelInfo.letterCardBgHex,
                           fontFamily:
-                            '"Gowun Dodum", \'ONE-Mobile-POP\', sans-serif',
+                            '"Gowun Dodum", "CookieRun-Bold", \'ONE-Mobile-POP\', sans-serif',
                         }}
                         className="p-3.5 rounded-2xl border border-[#2C2F63]/15 text-[#2C2F63] text-left shadow-sm"
                       >
@@ -742,7 +742,7 @@ function SnowballDetailContent() {
                           <span
                             style={{
                               fontFamily:
-                                '"Gowun Dodum", \'ONE-Mobile-POP\', sans-serif',
+                                '"Gowun Dodum", "CookieRun-Bold", \'ONE-Mobile-POP\', sans-serif',
                             }}
                             className="text-xs font-medium text-[#2C2F63]"
                           >
@@ -751,7 +751,7 @@ function SnowballDetailContent() {
                           <span
                             style={{
                               fontFamily:
-                                '"Gowun Dodum", \'ONE-Mobile-POP\', sans-serif',
+                                '"Gowun Dodum", "CookieRun-Bold", \'ONE-Mobile-POP\', sans-serif',
                             }}
                             className="text-[10px] font-normal text-[#2C2F63]/70"
                           >
@@ -767,7 +767,7 @@ function SnowballDetailContent() {
                         <p
                           style={{
                             fontFamily:
-                              '"Gowun Dodum", \'ONE-Mobile-POP\', sans-serif',
+                              '"Gowun Dodum", "CookieRun-Bold", \'ONE-Mobile-POP\', sans-serif',
                           }}
                           className="text-xs font-normal text-[#2C2F63]/75 leading-relaxed blur-[6px] select-none pointer-events-none"
                           aria-hidden="true"

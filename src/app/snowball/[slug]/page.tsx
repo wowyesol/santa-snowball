@@ -3,11 +3,14 @@ import type { Metadata } from "next";
 import SnowballDetailClient from "@/components/SnowballDetailClient";
 import { getSnowballBySlug } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const SITE_URL = "https://santa-snowball.vercel.app";
 const DEFAULT_TITLE = "차곡차곡 크리스마스 | 산타보다 빠른 우편함";
 const DEFAULT_DESCRIPTION =
   "친구들과 따뜻한 연말 편지를 나누고 크리스마스 선물에도 응모해 보세요!";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/api/og?v=6`;
+const DEFAULT_OG_IMAGE = `${SITE_URL}/api/og?v=7`;
 
 interface SnowballDetailPageProps {
   params?: Promise<{ slug: string }> | { slug: string };
@@ -29,9 +32,9 @@ export async function generateMetadata({
     if (snowball) {
       const shareTitle = `${snowball.nickname}님에게 편지를 보내주세요 | 차곡차곡 크리스마스`;
       const shareDescription = `${snowball.nickname}님의 스노우볼에 따뜻한 연말 편지를 남기면 응모권이 차곡차곡 쌓여요!`;
-      const ogImageUrl = `${SITE_URL}/api/og?level=${encodeURIComponent(
-        String(snowball.level ?? 0)
-      )}&v=6`;
+      const ogImageUrl = `${SITE_URL}/api/og?sb=${encodeURIComponent(
+        snowball.slug
+      )}&level=${encodeURIComponent(String(snowball.level ?? 0))}&v=7`;
 
       return {
         title: shareTitle,

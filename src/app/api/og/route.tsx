@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import fs from "fs";
 import path from "path";
+import { getSnowballBySlug } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,17 +80,25 @@ function getSnowballFilenameByLevel(levelParam: string | null): string {
 export async function GET(req: NextRequest) {
   try {
     const publicDir = path.join(process.cwd(), "public");
+    const sbSlugParam =
+      req.nextUrl.searchParams.get("sb")?.trim() ||
+      req.nextUrl.searchParams.get("slug")?.trim() ||
+      null;
+    const levelParam = req.nextUrl.searchParams.get("level");
+    const isUserSpecificOg = Boolean(sbSlugParam || levelParam !== null);
 
-    // 1) 향후 public/og-thumbnail.png 전용 썸네일 파일이 직접 추가된 경우 최우선 사용
-    const customThumbnailPath = path.join(publicDir, "og-thumbnail.png");
-    if (fs.existsSync(customThumbnailPath)) {
-      const customBuffer = fs.readFileSync(customThumbnailPath);
-      return new Response(customBuffer, {
-        headers: {
-          "Content-Type": "image/png",
-          "Cache-Control": "public, max-age=3600, s-maxage=3600",
-        },
-      });
+    // 1) 비로그인 순수 기본 홈(/) 요청이면서 public/og-thumbnail.png 전용 파일이 있을 때만 정적 파일 사용
+    if (!isUserSpecificOg) {
+      const customThumbnailPath = path.join(publicDir, "og-thumbnail.png");
+      if (fs.existsSync(customThumbnailPath)) {
+        const customBuffer = fs.readFileSync(customThumbnailPath);
+        return new Response(customBuffer, {
+          headers: {
+            "Content-Type": "image/png",
+            "Cache-Control": "public, max-age=3600, s-maxage=3600",
+          },
+        });
+      }
     }
 
     // 2) 실제 크레용 밤하늘·눈언덕 배경 이미지(bg-night-snow.png) 로드
@@ -100,9 +109,17 @@ export async function GET(req: NextRequest) {
       bgDataUrl = `data:image/png;base64,${bgBuffer.toString("base64")}`;
     }
 
-    // 3) 유저 레벨 파라미터(?level=...)에 맞는 새 스노우볼 PNG 로드 (없으면 기본 lv0_snowball.png)
-    const levelParam = req.nextUrl.searchParams.get("level");
-    const snowballFilename = getSnowballFilenameByLevel(levelParam);
+    // 3) 유저 공유 링크(?sb=[slug] 또는 ?level=...)에 맞춰 실제 유저의 스노우볼 색상(Lv.0 민트 / Lv.1 핑크 / Lv.3 골드) 동적 반영
+    //    (비로그인 순수 기본 홈 '/' 자체의 미리보기는 기존 기본값 유지)
+    let resolvedLevelStr: string | null = levelParam;
+    if (sbSlugParam) {
+      const sbData = await getSnowballBySlug(sbSlugParam);
+      if (sbData) {
+        resolvedLevelStr = String(sbData.level ?? 0);
+      }
+    }
+
+    const snowballFilename = getSnowballFilenameByLevel(resolvedLevelStr);
     const snowballPath = path.join(publicDir, snowballFilename);
 
     let snowballDataUrl = `https://santa-snowball.vercel.app/${snowballFilename}`;
@@ -195,6 +212,13 @@ export async function GET(req: NextRequest) {
       {
         width: 1200,
         height: 630,
+        headers: isUserSpecificOg
+          ? {
+              "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=300",
+            }
+          : {
+              "Cache-Control": "public, max-age=3600, s-maxage=3600",
+            },
       }
     );
   } catch (err) {
